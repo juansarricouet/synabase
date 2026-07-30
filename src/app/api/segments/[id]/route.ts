@@ -13,12 +13,12 @@ const patchSchema = z.object({
 export const PATCH = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const data = await parseBody(req, patchSchema);
-  const segment = updateSegment(tenant.business.id, id, data);
+  const segment = await updateSegment(tenant.business.id, id, data);
   return NextResponse.json({ segment });
 });
 
 export const DELETE = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  deleteSegment(tenant.business.id, id);
+  await deleteSegment(tenant.business.id, id);
   return NextResponse.json({ ok: true });
 });

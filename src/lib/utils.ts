@@ -22,29 +22,51 @@ export function formatPercent(n: number, decimals = 0): string {
   return `${n.toLocaleString("es-AR", { maximumFractionDigits: decimals })}%`;
 }
 
+const AR_TZ = "America/Argentina/Buenos_Aires";
+
+/**
+ * Partes numéricas de una fecha en la zona horaria del comercio.
+ *
+ * Se arma el texto a mano en lugar de usar `Intl.…format()` directo porque los
+ * separadores que devuelve ICU difieren entre Node y el navegador (por ejemplo,
+ * espacio duro vs. espacio normal), y esa diferencia rompe la hidratación de
+ * React. Los valores numéricos sí son idénticos en todos los motores.
+ */
+function dateParts(d: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: AR_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return {
+    year: get("year"),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour,
+    minute: get("minute"),
+  };
+}
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(d);
+  const p = dateParts(d);
+  return `${p.day} ${MONTHS_ES[p.month - 1]?.toLowerCase()} ${p.year}`;
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Argentina/Buenos_Aires",
-  }).format(d);
+  const p = dateParts(d);
+  return `${p.day} ${MONTHS_ES[p.month - 1]?.toLowerCase()} ${p.hour}:${p.minute}`;
 }
 
 export function timeAgo(iso: string | null | undefined): string {
@@ -74,7 +96,7 @@ export function daysSince(iso: string | null | undefined): number | null {
   return Math.floor((Date.now() - d) / 86400000);
 }
 
-const MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+export const MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 /** "2026-03" → "Mar 26" */
 export function formatMonthKey(key: string): string {

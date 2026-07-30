@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await props.params;
-  const found = getPublicFormBySlug(slug);
+  const found = await getPublicFormBySlug(slug);
   return {
     title: found ? `${found.business.name}` : "Formulario",
     description: found ? found.form.incentive : undefined,
@@ -16,7 +16,7 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
 
 export default async function PublicFormPage(props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
-  const found = getPublicFormBySlug(slug);
+  const found = await getPublicFormBySlug(slug);
 
   if (!found) {
     return (

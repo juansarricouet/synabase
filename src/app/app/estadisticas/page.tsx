@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
   const tenant = await requireTenant();
-  const a = getAnalytics(tenant.business.id);
+  const a = await getAnalytics(tenant.business.id);
 
   return (
     <div>

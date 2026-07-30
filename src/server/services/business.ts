@@ -1,57 +1,61 @@
 import "server-only";
-import { getDb, nowIso, uid, shortCode, tx } from "../db";
+import { nowIso, one, rows, run, shortCode, tx, uid } from "../db";
 import { ApiError } from "../http";
 import { log } from "../log";
 import { slugify } from "@/lib/utils";
 import { createForm } from "./forms";
 import type { Business, Role } from "@/lib/types";
 
-function uniqueBizSlug(base: string): string {
-  const db = getDb();
+async function uniqueBizSlug(base: string): Promise<string> {
   let candidate = base || `comercio-${shortCode(4)}`;
-  while (db.prepare("SELECT 1 FROM businesses WHERE slug = ?").get(candidate)) {
+  while (await one("SELECT 1 FROM businesses WHERE slug = $1", [candidate])) {
     candidate = `${base}-${shortCode(3)}`;
   }
   return candidate;
 }
 
-export function createBusiness(
+export async function createBusiness(
   userId: string,
   data: { name: string; category?: string; address?: string; phone?: string },
-): Business {
-  const db = getDb();
+): Promise<Business> {
   const id = uid();
   const now = nowIso();
-  const slug = uniqueBizSlug(slugify(data.name));
-  tx(() => {
-    db.prepare(
+  const slug = await uniqueBizSlug(slugify(data.name));
+
+  await tx(async (client) => {
+    await run(
       `INSERT INTO businesses (id, name, slug, category, address, phone, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, data.name.trim(), slug, data.category ?? null, data.address ?? null, data.phone ?? null, now);
-    db.prepare(
-      "INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES (?, ?, ?, 'owner', ?)",
-    ).run(uid(), userId, id, now);
-    const defaultTags = [
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, data.name.trim(), slug, data.category ?? null, data.address ?? null, data.phone ?? null, now],
+      client,
+    );
+    await run(
+      "INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES ($1, $2, $3, 'owner', $4)",
+      [uid(), userId, id, now],
+      client,
+    );
+    const defaultTags: [string, string][] = [
       ["VIP", "amber"],
       ["Frecuente", "violet"],
       ["Nuevo", "sky"],
-    ] as const;
+    ];
     for (const [name, color] of defaultTags) {
-      db.prepare(
-        "INSERT INTO tags (id, business_id, name, color, created_at) VALUES (?, ?, ?, ?, ?)",
-      ).run(uid(), id, name, color, now);
+      await run(
+        "INSERT INTO tags (id, business_id, name, color, created_at) VALUES ($1, $2, $3, $4, $5)",
+        [uid(), id, name, color, now],
+        client,
+      );
     }
   });
+
   // Formulario inicial listo para usar apenas se crea el negocio.
-  createForm(id, "Formulario principal", { slugBase: slug });
+  await createForm(id, "Formulario principal", { slugBase: slug });
   log.info("business.created", { businessId: id, userId });
-  return getBusiness(id)!;
+  return (await getBusiness(id))!;
 }
 
-export function getBusiness(id: string): Business | null {
-  const row = getDb().prepare("SELECT * FROM businesses WHERE id = ?").get(id) as
-    | Record<string, unknown>
-    | undefined;
+export async function getBusiness(id: string): Promise<Business | null> {
+  const row = await one("SELECT * FROM businesses WHERE id = $1", [id]);
   if (!row) return null;
   return {
     id: row.id as string,
@@ -70,23 +74,23 @@ export function getBusiness(id: string): Business | null {
 
 const BIZ_FIELDS = ["name", "category", "address", "phone", "logo_url", "brand_color", "hours", "plan"] as const;
 
-export function updateBusiness(
+export async function updateBusiness(
   businessId: string,
   patch: Partial<Pick<Business, (typeof BIZ_FIELDS)[number]>>,
-): Business {
+): Promise<Business> {
   const sets: string[] = [];
-  const values: (string | null)[] = [];
+  const values: unknown[] = [];
   for (const f of BIZ_FIELDS) {
     if (patch[f] !== undefined) {
-      sets.push(`${f} = ?`);
-      values.push(patch[f] as string | null);
+      values.push(patch[f] ?? null);
+      sets.push(`${f} = $${values.length}`);
     }
   }
   if (sets.length === 0) throw new ApiError(400, "Nada para actualizar");
   values.push(businessId);
-  getDb().prepare(`UPDATE businesses SET ${sets.join(", ")} WHERE id = ?`).run(...values);
+  await run(`UPDATE businesses SET ${sets.join(", ")} WHERE id = $${values.length}`, values);
   log.info("business.updated", { businessId, fields: sets.length });
-  return getBusiness(businessId)!;
+  return (await getBusiness(businessId))!;
 }
 
 /* ————— Equipo ————— */
@@ -100,16 +104,14 @@ export interface Member {
   joined_at: string;
 }
 
-export function listMembers(businessId: string): Member[] {
-  return (
-    getDb()
-      .prepare(
-        `SELECT m.id AS membership_id, u.id AS user_id, u.name, u.email, m.role, m.created_at AS joined_at
-         FROM memberships m JOIN users u ON u.id = m.user_id
-         WHERE m.business_id = ? ORDER BY m.created_at ASC`,
-      )
-      .all(businessId) as unknown as Member[]
-  ).map((r) => ({ ...r }));
+export async function listMembers(businessId: string): Promise<Member[]> {
+  const result = await rows<Member & Record<string, unknown>>(
+    `SELECT m.id AS membership_id, u.id AS user_id, u.name, u.email, m.role, m.created_at AS joined_at
+     FROM memberships m JOIN users u ON u.id = m.user_id
+     WHERE m.business_id = $1 ORDER BY m.created_at ASC`,
+    [businessId],
+  );
+  return result.map((r) => ({ ...r }));
 }
 
 export interface Invitation {
@@ -121,81 +123,90 @@ export interface Invitation {
   created_at: string;
 }
 
-export function listInvitations(businessId: string): Invitation[] {
-  return (
-    getDb()
-      .prepare(
-        "SELECT id, email, role, token, status, created_at FROM invitations WHERE business_id = ? AND status = 'pending' ORDER BY created_at DESC",
-      )
-      .all(businessId) as unknown as Invitation[]
-  ).map((r) => ({ ...r }));
+export async function listInvitations(businessId: string): Promise<Invitation[]> {
+  const result = await rows<Invitation & Record<string, unknown>>(
+    `SELECT id, email, role, token, status, created_at FROM invitations
+     WHERE business_id = $1 AND status = 'pending' ORDER BY created_at DESC`,
+    [businessId],
+  );
+  return result.map((r) => ({ ...r }));
 }
 
-export function createInvitation(businessId: string, email: string, role: Role): Invitation {
-  const db = getDb();
-  const existingUser = db
-    .prepare(
-      `SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id
-       WHERE m.business_id = ? AND u.email = ?`,
-    )
-    .get(businessId, email.toLowerCase().trim());
+export async function createInvitation(
+  businessId: string,
+  email: string,
+  role: Role,
+): Promise<Invitation> {
+  const cleanEmail = email.toLowerCase().trim();
+  const existingUser = await one(
+    `SELECT m.id FROM memberships m JOIN users u ON u.id = m.user_id
+     WHERE m.business_id = $1 AND u.email = $2`,
+    [businessId, cleanEmail],
+  );
   if (existingUser) throw new ApiError(409, "Esa persona ya es parte del equipo");
+
   const id = uid();
   const token = shortCode(12);
-  db.prepare(
-    "INSERT INTO invitations (id, business_id, email, role, token, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)",
-  ).run(id, businessId, email.toLowerCase().trim(), role, token, nowIso());
+  const now = nowIso();
+  await run(
+    "INSERT INTO invitations (id, business_id, email, role, token, status, created_at) VALUES ($1, $2, $3, $4, $5, 'pending', $6)",
+    [id, businessId, cleanEmail, role, token, now],
+  );
   log.info("invitation.created", { businessId });
-  return { id, email: email.toLowerCase().trim(), role, token, status: "pending", created_at: nowIso() };
+  return { id, email: cleanEmail, role, token, status: "pending", created_at: now };
 }
 
-export function revokeInvitation(businessId: string, invitationId: string) {
-  const res = getDb()
-    .prepare("DELETE FROM invitations WHERE id = ? AND business_id = ?")
-    .run(invitationId, businessId);
-  if (res.changes === 0) throw new ApiError(404, "Invitación no encontrada");
+export async function revokeInvitation(businessId: string, invitationId: string) {
+  const changes = await run("DELETE FROM invitations WHERE id = $1 AND business_id = $2", [
+    invitationId,
+    businessId,
+  ]);
+  if (changes === 0) throw new ApiError(404, "Invitación no encontrada");
 }
 
-export function getInvitationByToken(token: string) {
-  return getDb()
-    .prepare(
-      `SELECT i.*, b.name AS business_name FROM invitations i
-       JOIN businesses b ON b.id = i.business_id
-       WHERE i.token = ? AND i.status = 'pending'`,
-    )
-    .get(token) as
-    | { id: string; business_id: string; email: string; role: Role; business_name: string }
-    | undefined;
+export async function getInvitationByToken(token: string) {
+  return one<{
+    id: string;
+    business_id: string;
+    email: string;
+    role: Role;
+    business_name: string;
+  }>(
+    `SELECT i.id, i.business_id, i.email, i.role, b.name AS business_name
+     FROM invitations i JOIN businesses b ON b.id = i.business_id
+     WHERE i.token = $1 AND i.status = 'pending'`,
+    [token],
+  );
 }
 
-export function acceptInvitation(token: string, userId: string) {
-  const db = getDb();
-  const inv = getInvitationByToken(token);
+export async function acceptInvitation(token: string, userId: string): Promise<string> {
+  const inv = await getInvitationByToken(token);
   if (!inv) throw new ApiError(404, "La invitación no existe o ya fue usada");
-  tx(() => {
-    const already = db
-      .prepare("SELECT 1 FROM memberships WHERE user_id = ? AND business_id = ?")
-      .get(userId, inv.business_id);
-    if (!already) {
-      db.prepare(
-        "INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES (?, ?, ?, ?, ?)",
-      ).run(uid(), userId, inv.business_id, inv.role, nowIso());
-    }
-    db.prepare("UPDATE invitations SET status = 'accepted' WHERE id = ?").run(inv.id);
+  await tx(async (client) => {
+    await run(
+      `INSERT INTO memberships (id, user_id, business_id, role, created_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, business_id) DO NOTHING`,
+      [uid(), userId, inv.business_id, inv.role, nowIso()],
+      client,
+    );
+    await run("UPDATE invitations SET status = 'accepted' WHERE id = $1", [inv.id], client);
   });
   return inv.business_id;
 }
 
-export function updateMemberRole(businessId: string, membershipId: string, role: Role) {
-  const res = getDb()
-    .prepare("UPDATE memberships SET role = ? WHERE id = ? AND business_id = ? AND role != 'owner'")
-    .run(role, membershipId, businessId);
-  if (res.changes === 0) throw new ApiError(400, "No se pudo cambiar el rol");
+export async function updateMemberRole(businessId: string, membershipId: string, role: Role) {
+  const changes = await run(
+    "UPDATE memberships SET role = $1 WHERE id = $2 AND business_id = $3 AND role <> 'owner'",
+    [role, membershipId, businessId],
+  );
+  if (changes === 0) throw new ApiError(400, "No se pudo cambiar el rol");
 }
 
-export function removeMember(businessId: string, membershipId: string) {
-  const res = getDb()
-    .prepare("DELETE FROM memberships WHERE id = ? AND business_id = ? AND role != 'owner'")
-    .run(membershipId, businessId);
-  if (res.changes === 0) throw new ApiError(400, "No se pudo quitar a esta persona");
+export async function removeMember(businessId: string, membershipId: string) {
+  const changes = await run(
+    "DELETE FROM memberships WHERE id = $1 AND business_id = $2 AND role <> 'owner'",
+    [membershipId, businessId],
+  );
+  if (changes === 0) throw new ApiError(400, "No se pudo quitar a esta persona");
 }

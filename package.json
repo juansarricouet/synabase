@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "description": "SynapBase — La base de datos inteligente de clientes para tu comercio. Un producto de Synapse.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node scripts/seed.mjs",
+    "db:setup": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/db-setup.mjs",
+    "seed": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +24,7 @@
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.469.0",
     "next": "^15.1.6",
+    "pg": "^8.22.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -30,6 +35,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

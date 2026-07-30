@@ -1,10 +1,13 @@
 /**
- * SynapBase — esquema relacional multi-tenant.
- * Fuente única de verdad: la importan tanto el runtime de Next (db.ts)
+ * SynapBase — esquema relacional multi-tenant (PostgreSQL).
+ * Fuente única de verdad: lo importan tanto el runtime de Next (db.ts)
  * como el script de seed (scripts/seed.mjs).
  *
  * Aislamiento por comercio: toda tabla de datos lleva business_id y las
  * consultas de los servicios SIEMPRE filtran por el negocio de la sesión.
+ *
+ * Las fechas se guardan como texto ISO 8601 en UTC: al ser un formato de
+ * ancho fijo, ordena y compara lexicográficamente igual que cronológicamente.
  */
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
@@ -71,25 +74,25 @@ CREATE TABLE IF NOT EXISTS forms (
   success_title TEXT NOT NULL DEFAULT '',
   success_text  TEXT NOT NULL DEFAULT '',
   theme_json    TEXT NOT NULL DEFAULT '{}',
-  is_template   INTEGER NOT NULL DEFAULT 0,
+  is_template   BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_forms_biz ON forms(business_id);
 
 CREATE TABLE IF NOT EXISTS questions (
-  id          TEXT PRIMARY KEY,
-  form_id     TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-  type        TEXT NOT NULL,
-  label       TEXT NOT NULL,
-  placeholder TEXT,
+  id           TEXT PRIMARY KEY,
+  form_id      TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+  type         TEXT NOT NULL,
+  label        TEXT NOT NULL,
+  placeholder  TEXT,
   options_json TEXT NOT NULL DEFAULT '[]',
-  required    INTEGER NOT NULL DEFAULT 0,
-  active      INTEGER NOT NULL DEFAULT 1,
-  position    INTEGER NOT NULL DEFAULT 0,
-  maps_to     TEXT,
-  scale_max   INTEGER,
-  created_at  TEXT NOT NULL
+  required     BOOLEAN NOT NULL DEFAULT FALSE,
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  position     INTEGER NOT NULL DEFAULT 0,
+  maps_to      TEXT,
+  scale_max    INTEGER,
+  created_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_questions_form ON questions(form_id, position);
 
@@ -132,7 +135,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   form_id       TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
   customer_id   TEXT REFERENCES customers(id) ON DELETE SET NULL,
   product       TEXT,
-  amount        REAL,
+  amount        DOUBLE PRECISION,
   discount_code TEXT,
   hour          INTEGER,
   weekday       INTEGER,

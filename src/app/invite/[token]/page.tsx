@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function InvitePage(props: { params: Promise<{ token: string }> }) {
   const { token } = await props.params;
-  const invitation = getInvitationByToken(token);
+  const invitation = await getInvitationByToken(token);
   const user = await getCurrentUser();
 
   if (!invitation) {

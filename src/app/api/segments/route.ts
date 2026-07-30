@@ -5,7 +5,7 @@ import { ruleSchema } from "@/server/schemas";
 import { createSegment, listSegments } from "@/server/services/segments";
 
 export const GET = withTenant(async (tenant) => {
-  return NextResponse.json({ segments: listSegments(tenant.business.id) });
+  return NextResponse.json({ segments: await listSegments(tenant.business.id) });
 });
 
 const createSchema = z.object({
@@ -16,6 +16,6 @@ const createSchema = z.object({
 
 export const POST = withTenant(async (tenant, req) => {
   const data = await parseBody(req, createSchema);
-  const segment = createSegment(tenant.business.id, data);
+  const segment = await createSegment(tenant.business.id, data);
   return NextResponse.json({ segment });
 });

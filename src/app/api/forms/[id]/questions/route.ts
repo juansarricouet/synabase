@@ -17,7 +17,7 @@ const questionSchema = z.object({
 export const POST = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const data = await parseBody(req, questionSchema);
-  const question = addQuestion(tenant.business.id, id, data);
+  const question = await addQuestion(tenant.business.id, id, data);
   return NextResponse.json({ question });
 });
 
@@ -26,6 +26,6 @@ const reorderSchema = z.object({ orderedIds: z.array(z.string()).min(1).max(100)
 export const PUT = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const { orderedIds } = await parseBody(req, reorderSchema);
-  reorderQuestions(tenant.business.id, id, orderedIds);
+  await reorderQuestions(tenant.business.id, id, orderedIds);
   return NextResponse.json({ ok: true });
 });

@@ -18,7 +18,7 @@ export const PATCH = withTenant(
   async (tenant, req, ctx: { params: Promise<{ id: string; qid: string }> }) => {
     const { id, qid } = await ctx.params;
     const patch = await parseBody(req, patchSchema);
-    const question = updateQuestion(tenant.business.id, id, qid, patch);
+    const question = await updateQuestion(tenant.business.id, id, qid, patch);
     return NextResponse.json({ question });
   },
 );
@@ -26,7 +26,7 @@ export const PATCH = withTenant(
 export const DELETE = withTenant(
   async (tenant, _req, ctx: { params: Promise<{ id: string; qid: string }> }) => {
     const { id, qid } = await ctx.params;
-    deleteQuestion(tenant.business.id, id, qid);
+    await deleteQuestion(tenant.business.id, id, qid);
     return NextResponse.json({ ok: true });
   },
 );

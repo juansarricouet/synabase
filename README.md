@@ -4,20 +4,23 @@
 
 Un QR en el local convierte cada visita en un cliente conocido: quién es, qué consume, cuándo vuelve y cuánto gasta. El descuento es el incentivo para capturar datos; la información es el producto.
 
-![Stack](https://img.shields.io/badge/Next.js%2015-black) ![React 19](https://img.shields.io/badge/React%2019-blue) ![Tailwind 4](https://img.shields.io/badge/Tailwind%204-38bdf8) ![SQLite](https://img.shields.io/badge/SQLite%20(node%3Asqlite)-lightgrey)
+![Stack](https://img.shields.io/badge/Next.js%2015-black) ![React 19](https://img.shields.io/badge/React%2019-blue) ![Tailwind 4](https://img.shields.io/badge/Tailwind%204-38bdf8) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791)
 
 ---
 
 ## Puesta en marcha
 
-Requiere **Node.js 22+** (usa el módulo nativo `node:sqlite`, sin dependencias binarias).
+Requiere **Node.js 20+** y una base **PostgreSQL** (local, [Neon](https://neon.tech), Supabase, Railway…).
 
 ```bash
-cd synapbase
 npm install
-npm run seed     # opcional: crea el comercio demo con 8 meses de datos
-npm run dev      # http://localhost:3000
+cp .env.example .env.local   # completá DATABASE_URL
+npm run db:setup             # crea las tablas
+npm run seed                 # opcional: comercio demo con 8 meses de datos
+npm run dev                  # http://localhost:3000
 ```
+
+**¿Listo para publicarlo online?** Seguí [DEPLOY.md](DEPLOY.md) — con Vercel + Neon sale $0.
 
 **Cuenta demo** (también disponible con el botón "Explorar la demo" en /login):
 
@@ -73,7 +76,7 @@ src/
 ├── components/             # UI kit propio + charts + flujo público
 ├── lib/                    # Tipos compartidos, utils, cliente HTTP, export
 └── server/                 # ← todo el backend
-    ├── db.ts               # node:sqlite singleton + helpers TZ Argentina
+    ├── db.ts               # pool de PostgreSQL + helpers async y TZ Argentina
     ├── schema.mjs          # Esquema SQL (fuente única, la usa también el seed)
     ├── auth.ts             # scrypt + sesiones opacas hasheadas en DB
     ├── guard.ts / http.ts  # requireTenant / withTenant / errores / zod
@@ -86,7 +89,7 @@ src/
 
 - **Multi-tenant estricto**: toda tabla de datos lleva `business_id`. El tenant sale **siempre** de la sesión (`withTenant`/`requireTenant`), nunca del cliente; cada consulta de servicio filtra por negocio. Verificado: acceso cruzado responde 404/401.
 - **Autenticación**: contraseñas con `scrypt` (nativo de Node), sesiones opacas en cookie httpOnly cuyo hash SHA-256 se guarda en DB (revocables, un robo de DB no expone tokens).
-- **Base relacional** SQLite vía `node:sqlite` (cero binarios). El acceso está encapsulado en `src/server/services/*`; migrar a Postgres es reemplazar esa capa sin tocar UI ni rutas.
+- **Base relacional PostgreSQL** con el driver `pg`. Todo el SQL vive en `src/server/services/*` detrás de cuatro helpers (`rows`, `one`, `run`, `tx`), así que cambiar de proveedor o de ORM no toca ni la interfaz ni las rutas. El esquema se crea solo en el primer arranque, protegido con un *advisory lock* para que varias instancias serverless no compitan.
 - **Validación** con zod en todas las rutas; errores consistentes `{error}` + logging estructurado.
 - **Identidad del cliente**: normalización de teléfono/email y matching teléfono→email→nombre dentro del negocio; los datos nuevos completan la ficha sin pisar los existentes.
 - **Enviabilidad futura**: `campaigns` + `campaign_recipients` (cola con estado) dejan la integración de WhatsApp Business API / proveedor de email como un worker que consume filas `queued`.
@@ -96,11 +99,10 @@ src/
 
 `npm run seed` crea **Café Martina** con un RNG determinístico: 185 clientes con nombres argentinos, ~550 visitas en 8 meses con horarios/di̇as realistas, respuestas completas (NPS, cómo nos conociste, género, edad, gasto), escaneos con conversión ~57 %, etiquetas, 5 segmentos y 3 campañas (enviada con destinatarios, borrador y programada). La cuenta demo también se auto-crea desde el botón de la pantalla de login.
 
-La base vive en `data/synapbase.db` (gitignored). Variable opcional: `SYNAPBASE_DB=/ruta/al/archivo.db`.
+La conexión se configura con `DATABASE_URL` (ver `.env.example`). `npm run db:setup` crea o actualiza las tablas y es idempotente.
 
 ## Roadmap sugerido
 
 1. Envío real de campañas (WhatsApp Business API / Resend) consumiendo `campaign_recipients`.
-2. Postgres + Prisma/Drizzle reemplazando la capa `services` cuando el volumen lo pida.
-3. Facturación con Mercado Pago/Stripe sobre el campo `plan` ya existente.
-4. Multi-sucursal: `businesses` ya soporta N negocios por usuario con el switcher del panel.
+2. Facturación con Mercado Pago/Stripe sobre el campo `plan` ya existente.
+3. Multi-sucursal: `businesses` ya soporta N negocios por usuario con el switcher del panel.

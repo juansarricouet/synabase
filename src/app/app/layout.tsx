@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const tenant = await getTenant();
   if (!tenant) redirect("/onboarding");
 
-  const forms = listForms(tenant.business.id);
+  const forms = await listForms(tenant.business.id);
   const mainFormSlug = forms.find((f) => f.status === "active" && !f.is_template)?.slug ?? null;
 
   return (

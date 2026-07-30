@@ -12,14 +12,14 @@ const schema = z.object({
 
 export const POST = withPublic(async (req) => {
   const data = await parseBody(req, schema);
-  if (findUserByEmail(data.email)) {
+  if (await findUserByEmail(data.email)) {
     return NextResponse.json(
       { error: "Ya existe una cuenta con ese email. Probá iniciar sesión." },
       { status: 409 },
     );
   }
-  const user = createUser(data.email, data.name, data.password);
-  const { token, expiresAt } = createSession(user.id);
+  const user = await createUser(data.email, data.name, data.password);
+  const { token, expiresAt } = await createSession(user.id);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,

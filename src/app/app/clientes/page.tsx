@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
   const tenant = await requireTenant();
-  const facts = getCustomerFacts(tenant.business.id);
+  const facts = await getCustomerFacts(tenant.business.id);
 
   const rows: CustomerRow[] = facts.map((c) => ({
     id: c.id,

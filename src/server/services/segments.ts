@@ -1,5 +1,5 @@
 import "server-only";
-import { getDb, nowIso, uid, parseJson } from "../db";
+import { nowIso, one, parseJson, rows, run, uid } from "../db";
 import { ApiError } from "../http";
 import { getCustomerFacts, type CustomerFacts } from "./customers";
 import type { Segment, SegmentRule } from "@/lib/types";
@@ -53,7 +53,8 @@ export function matchesRule(c: CustomerFacts, rule: SegmentRule): boolean {
       return rule.op === "neq" ? !has : has;
     }
     case "favorite_product": {
-      if (rule.op === "contains") return includesInsensitive(c.favorite_product, String(rule.value ?? ""));
+      if (rule.op === "contains")
+        return includesInsensitive(c.favorite_product, String(rule.value ?? ""));
       return (c.favorite_product ?? "") === String(rule.value);
     }
     case "total_spent": {
@@ -92,72 +93,80 @@ export function matchesRule(c: CustomerFacts, rule: SegmentRule): boolean {
   }
 }
 
-export function evaluateRules(businessId: string, rules: SegmentRule[]): CustomerFacts[] {
-  const facts = getCustomerFacts(businessId);
+export async function evaluateRules(
+  businessId: string,
+  rules: SegmentRule[],
+): Promise<CustomerFacts[]> {
+  const facts = await getCustomerFacts(businessId);
   if (rules.length === 0) return facts;
   return facts.filter((c) => rules.every((r) => matchesRule(c, r)));
 }
 
 /* ————— CRUD ————— */
 
-export function listSegments(businessId: string, withCounts = true): Segment[] {
-  const rows = getDb()
-    .prepare("SELECT * FROM segments WHERE business_id = ? ORDER BY created_at DESC")
-    .all(businessId) as Record<string, unknown>[];
-  const segments = rows.map(rowToSegment);
+export async function listSegments(businessId: string, withCounts = true): Promise<Segment[]> {
+  const result = await rows("SELECT * FROM segments WHERE business_id = $1 ORDER BY created_at DESC", [
+    businessId,
+  ]);
+  const segments = result.map(rowToSegment);
   if (withCounts && segments.length > 0) {
-    const facts = getCustomerFacts(businessId);
+    const facts = await getCustomerFacts(businessId);
     for (const s of segments) {
-      s.count = s.rules.length === 0 ? facts.length : facts.filter((c) => s.rules.every((r) => matchesRule(c, r))).length;
+      s.count =
+        s.rules.length === 0
+          ? facts.length
+          : facts.filter((c) => s.rules.every((r) => matchesRule(c, r))).length;
     }
   }
   return segments;
 }
 
-export function getSegment(businessId: string, segmentId: string): Segment | null {
-  const row = getDb()
-    .prepare("SELECT * FROM segments WHERE id = ? AND business_id = ?")
-    .get(segmentId, businessId) as Record<string, unknown> | undefined;
+export async function getSegment(businessId: string, segmentId: string): Promise<Segment | null> {
+  const row = await one("SELECT * FROM segments WHERE id = $1 AND business_id = $2", [
+    segmentId,
+    businessId,
+  ]);
   return row ? rowToSegment(row) : null;
 }
 
-export function createSegment(
+export async function createSegment(
   businessId: string,
   data: { name: string; description?: string; rules: SegmentRule[] },
-): Segment {
+): Promise<Segment> {
   const id = uid();
   const now = nowIso();
-  getDb()
-    .prepare(
-      "INSERT INTO segments (id, business_id, name, description, rules_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    )
-    .run(id, businessId, data.name.trim(), data.description ?? null, JSON.stringify(data.rules), now, now);
-  return getSegment(businessId, id)!;
+  await run(
+    "INSERT INTO segments (id, business_id, name, description, rules_json, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    [id, businessId, data.name.trim(), data.description ?? null, JSON.stringify(data.rules), now, now],
+  );
+  return (await getSegment(businessId, id))!;
 }
 
-export function updateSegment(
+export async function updateSegment(
   businessId: string,
   segmentId: string,
   data: { name?: string; description?: string; rules?: SegmentRule[] },
-): Segment {
-  const existing = getSegment(businessId, segmentId);
+): Promise<Segment> {
+  const existing = await getSegment(businessId, segmentId);
   if (!existing) throw new ApiError(404, "Segmento no encontrado");
-  getDb()
-    .prepare("UPDATE segments SET name = ?, description = ?, rules_json = ?, updated_at = ? WHERE id = ? AND business_id = ?")
-    .run(
+  await run(
+    "UPDATE segments SET name = $1, description = $2, rules_json = $3, updated_at = $4 WHERE id = $5 AND business_id = $6",
+    [
       data.name ?? existing.name,
       data.description !== undefined ? data.description : existing.description,
       JSON.stringify(data.rules ?? existing.rules),
       nowIso(),
       segmentId,
       businessId,
-    );
-  return getSegment(businessId, segmentId)!;
+    ],
+  );
+  return (await getSegment(businessId, segmentId))!;
 }
 
-export function deleteSegment(businessId: string, segmentId: string) {
-  const res = getDb()
-    .prepare("DELETE FROM segments WHERE id = ? AND business_id = ?")
-    .run(segmentId, businessId);
-  if (res.changes === 0) throw new ApiError(404, "Segmento no encontrado");
+export async function deleteSegment(businessId: string, segmentId: string) {
+  const changes = await run("DELETE FROM segments WHERE id = $1 AND business_id = $2", [
+    segmentId,
+    businessId,
+  ]);
+  if (changes === 0) throw new ApiError(404, "Segmento no encontrado");
 }

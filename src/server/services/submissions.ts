@@ -1,5 +1,17 @@
 import "server-only";
-import { getDb, nowIso, uid, shortCode, parseJson, tx, localHour, localWeekday } from "../db";
+import {
+  localHour,
+  localWeekday,
+  nowIso,
+  num,
+  one,
+  parseJson,
+  rows,
+  run,
+  shortCode,
+  tx,
+  uid,
+} from "../db";
 import { ApiError } from "../http";
 import { log } from "../log";
 import { getPublicFormBySlug } from "./forms";
@@ -7,12 +19,15 @@ import type { Question, SubmissionRow } from "@/lib/types";
 
 /* ————— Registro de escaneos ————— */
 
-export function recordScan(slug: string): boolean {
-  const found = getPublicFormBySlug(slug);
+export async function recordScan(slug: string): Promise<boolean> {
+  const found = await getPublicFormBySlug(slug);
   if (!found) return false;
-  getDb()
-    .prepare("INSERT INTO scans (id, business_id, form_id, created_at) VALUES (?, ?, ?, ?)")
-    .run(uid(), found.business.id, found.form.id, nowIso());
+  await run("INSERT INTO scans (id, business_id, form_id, created_at) VALUES ($1, $2, $3, $4)", [
+    uid(),
+    found.business.id,
+    found.form.id,
+    nowIso(),
+  ]);
   return true;
 }
 
@@ -85,11 +100,15 @@ export interface SubmitResult {
   customer_name: string;
 }
 
-export function submitForm(slug: string, rawAnswers: Record<string, unknown>): SubmitResult {
-  const found = getPublicFormBySlug(slug);
+export async function submitForm(
+  slug: string,
+  rawAnswers: Record<string, unknown>,
+): Promise<SubmitResult> {
+  const found = await getPublicFormBySlug(slug);
   if (!found) throw new ApiError(404, "Este formulario ya no está disponible");
   const { form, business } = found;
-  if (form.status !== "active") throw new ApiError(410, "Este formulario está pausado en este momento");
+  if (form.status !== "active")
+    throw new ApiError(410, "Este formulario está pausado en este momento");
 
   const questions = form.questions ?? [];
   const clean = new Map<string, unknown>();
@@ -103,11 +122,17 @@ export function submitForm(slug: string, rawAnswers: Record<string, unknown>): S
     if (q.maps_to && clean.get(q.id) != null) mapped[q.maps_to] = clean.get(q.id);
   }
 
-  const name = typeof mapped.name === "string" && mapped.name.trim() ? mapped.name.trim().slice(0, 80) : "Sin nombre";
+  const name =
+    typeof mapped.name === "string" && mapped.name.trim()
+      ? mapped.name.trim().slice(0, 80)
+      : "Sin nombre";
   const phone = typeof mapped.phone === "string" ? normalizePhone(mapped.phone) : null;
   const email = typeof mapped.email === "string" ? normalizeEmail(mapped.email) : null;
   const gender = typeof mapped.gender === "string" ? normalizeGender(mapped.gender) : null;
-  const age = typeof mapped.age === "number" && mapped.age > 0 && mapped.age < 120 ? Math.round(mapped.age) : null;
+  const age =
+    typeof mapped.age === "number" && mapped.age > 0 && mapped.age < 120
+      ? Math.round(mapped.age)
+      : null;
   const product =
     typeof mapped.product === "string"
       ? mapped.product.trim().slice(0, 200)
@@ -116,77 +141,91 @@ export function submitForm(slug: string, rawAnswers: Record<string, unknown>): S
         : null;
   const amount = typeof mapped.amount === "number" && mapped.amount >= 0 ? mapped.amount : null;
 
-  const db = getDb();
   const now = new Date();
   const nowStr = now.toISOString();
 
-  return tx(() => {
+  return tx(async (client) => {
     // Resolución de identidad: teléfono → email → nombre (dentro del negocio)
-    let customer = (phone &&
-      db.prepare("SELECT * FROM customers WHERE business_id = ? AND phone = ?").get(business.id, phone)) as
-      | Record<string, unknown>
-      | undefined;
+    let customer = phone
+      ? await one<{ id: string }>(
+          "SELECT id FROM customers WHERE business_id = $1 AND phone = $2",
+          [business.id, phone],
+          client,
+        )
+      : undefined;
     if (!customer && email) {
-      customer = db
-        .prepare("SELECT * FROM customers WHERE business_id = ? AND email = ?")
-        .get(business.id, email) as Record<string, unknown> | undefined;
+      customer = await one<{ id: string }>(
+        "SELECT id FROM customers WHERE business_id = $1 AND email = $2",
+        [business.id, email],
+        client,
+      );
     }
     if (!customer && !phone && !email) {
-      customer = db
-        .prepare("SELECT * FROM customers WHERE business_id = ? AND lower(name) = lower(?) AND phone IS NULL AND email IS NULL")
-        .get(business.id, name) as Record<string, unknown> | undefined;
+      customer = await one<{ id: string }>(
+        `SELECT id FROM customers
+         WHERE business_id = $1 AND lower(name) = lower($2) AND phone IS NULL AND email IS NULL`,
+        [business.id, name],
+        client,
+      );
     }
 
     let customerId: string;
     let firstTime: boolean;
     if (customer) {
-      customerId = customer.id as string;
+      customerId = customer.id;
       firstTime = false;
-      db.prepare(
+      await run(
         `UPDATE customers SET
            visits = visits + 1,
-           last_visit_at = ?,
-           name = CASE WHEN name = 'Sin nombre' THEN ? ELSE name END,
-           phone = COALESCE(phone, ?),
-           email = COALESCE(email, ?),
-           gender = COALESCE(gender, ?),
-           age = COALESCE(age, ?)
-         WHERE id = ?`,
-      ).run(nowStr, name, phone, email, gender, age, customerId);
+           last_visit_at = $1,
+           name = CASE WHEN name = 'Sin nombre' THEN $2 ELSE name END,
+           phone = COALESCE(phone, $3),
+           email = COALESCE(email, $4),
+           gender = COALESCE(gender, $5),
+           age = COALESCE(age, $6)
+         WHERE id = $7`,
+        [nowStr, name, phone, email, gender, age, customerId],
+        client,
+      );
     } else {
       customerId = uid();
       firstTime = true;
-      db.prepare(
+      await run(
         `INSERT INTO customers (id, business_id, name, phone, email, gender, age, first_visit_at, last_visit_at, visits, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-      ).run(customerId, business.id, name, phone, email, gender, age, nowStr, nowStr, nowStr);
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10)`,
+        [customerId, business.id, name, phone, email, gender, age, nowStr, nowStr, nowStr],
+        client,
+      );
     }
 
     const submissionId = uid();
     const prefix = business.name.replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase() || "SYN";
     const discountCode = `${prefix}-${shortCode(4).toUpperCase()}`;
-    db.prepare(
+    await run(
       `INSERT INTO submissions (id, business_id, form_id, customer_id, product, amount, discount_code, hour, weekday, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      submissionId,
-      business.id,
-      form.id,
-      customerId,
-      product,
-      amount,
-      discountCode,
-      localHour(now),
-      localWeekday(now),
-      nowStr,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        submissionId,
+        business.id,
+        form.id,
+        customerId,
+        product,
+        amount,
+        discountCode,
+        localHour(now),
+        localWeekday(now),
+        nowStr,
+      ],
+      client,
     );
 
-    const insertAnswer = db.prepare(
-      "INSERT INTO answers (id, submission_id, question_id, value_json) VALUES (?, ?, ?, ?)",
-    );
     for (const [qid, value] of clean) {
       if (value === null) continue;
-      insertAnswer.run(uid(), submissionId, qid, JSON.stringify(value));
+      await run(
+        "INSERT INTO answers (id, submission_id, question_id, value_json) VALUES ($1, $2, $3, $4)",
+        [uid(), submissionId, qid, JSON.stringify(value)],
+        client,
+      );
     }
 
     log.info("submission.created", { businessId: business.id, formId: form.id, firstTime });
@@ -205,60 +244,61 @@ export interface ListSubmissionsOptions {
   offset?: number;
 }
 
-export function listSubmissions(businessId: string, opts: ListSubmissionsOptions = {}): { rows: SubmissionRow[]; total: number } {
-  const db = getDb();
-  const where: string[] = ["s.business_id = ?"];
-  const params: (string | number)[] = [businessId];
-  if (opts.formId) {
-    where.push("s.form_id = ?");
-    params.push(opts.formId);
-  }
-  if (opts.from) {
-    where.push("s.created_at >= ?");
-    params.push(opts.from);
-  }
-  if (opts.to) {
-    where.push("s.created_at <= ?");
-    params.push(opts.to);
-  }
+export async function listSubmissions(
+  businessId: string,
+  opts: ListSubmissionsOptions = {},
+): Promise<{ rows: SubmissionRow[]; total: number }> {
+  const where: string[] = [];
+  const params: unknown[] = [];
+  const push = (clause: (n: number) => string, value: unknown) => {
+    params.push(value);
+    where.push(clause(params.length));
+  };
+
+  push((n) => `s.business_id = $${n}`, businessId);
+  if (opts.formId) push((n) => `s.form_id = $${n}`, opts.formId);
+  if (opts.from) push((n) => `s.created_at >= $${n}`, opts.from);
+  if (opts.to) push((n) => `s.created_at <= $${n}`, opts.to);
   if (opts.search) {
-    where.push("(c.name LIKE ? OR s.product LIKE ? OR c.email LIKE ? OR c.phone LIKE ?)");
-    const like = `%${opts.search}%`;
-    params.push(like, like, like, like);
+    params.push(`%${opts.search}%`);
+    const n = params.length;
+    where.push(`(c.name ILIKE $${n} OR s.product ILIKE $${n} OR c.email ILIKE $${n} OR c.phone ILIKE $${n})`);
   }
   const whereSql = where.join(" AND ");
-  const total = (
-    db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM submissions s LEFT JOIN customers c ON c.id = s.customer_id WHERE ${whereSql}`,
-      )
-      .get(...params) as { c: number }
-  ).c;
+
+  const totalRow = await one<{ c: string }>(
+    `SELECT COUNT(*) AS c FROM submissions s
+     LEFT JOIN customers c ON c.id = s.customer_id
+     WHERE ${whereSql}`,
+    params,
+  );
+  const total = num(totalRow?.c);
 
   const limit = Math.min(opts.limit ?? 100, 500);
   const offset = opts.offset ?? 0;
-  const rows = db
-    .prepare(
-      `SELECT s.id, s.form_id, s.customer_id, s.product, s.amount, s.discount_code, s.created_at,
-              c.name AS customer_name, f.name AS form_name
-       FROM submissions s
-       LEFT JOIN customers c ON c.id = s.customer_id
-       JOIN forms f ON f.id = s.form_id
-       WHERE ${whereSql}
-       ORDER BY s.created_at DESC
-       LIMIT ? OFFSET ?`,
-    )
-    .all(...params, limit, offset) as Record<string, unknown>[];
+  const result = await rows(
+    `SELECT s.id, s.form_id, s.customer_id, s.product, s.amount, s.discount_code, s.created_at,
+            c.name AS customer_name, f.name AS form_name
+     FROM submissions s
+     LEFT JOIN customers c ON c.id = s.customer_id
+     JOIN forms f ON f.id = s.form_id
+     WHERE ${whereSql}
+     ORDER BY s.created_at DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset],
+  );
 
-  const ids = rows.map((r) => r.id as string);
+  const ids = result.map((r) => r.id as string);
   const answersBySubmission = new Map<string, Record<string, unknown>>();
   if (ids.length > 0) {
-    const placeholders = ids.map(() => "?").join(",");
-    const answerRows = db
-      .prepare(
-        `SELECT submission_id, question_id, value_json FROM answers WHERE submission_id IN (${placeholders})`,
-      )
-      .all(...ids) as { submission_id: string; question_id: string; value_json: string | null }[];
+    const answerRows = await rows<{
+      submission_id: string;
+      question_id: string;
+      value_json: string | null;
+    }>(
+      "SELECT submission_id, question_id, value_json FROM answers WHERE submission_id = ANY($1)",
+      [ids],
+    );
     for (const a of answerRows) {
       const bucket = answersBySubmission.get(a.submission_id) ?? {};
       bucket[a.question_id] = parseJson<unknown>(a.value_json, null);
@@ -268,14 +308,14 @@ export function listSubmissions(businessId: string, opts: ListSubmissionsOptions
 
   return {
     total,
-    rows: rows.map((r) => ({
+    rows: result.map((r) => ({
       id: r.id as string,
       form_id: r.form_id as string,
       form_name: r.form_name as string,
       customer_id: (r.customer_id as string) ?? null,
       customer_name: (r.customer_name as string) ?? null,
       product: (r.product as string) ?? null,
-      amount: (r.amount as number) ?? null,
+      amount: r.amount != null ? Number(r.amount) : null,
       discount_code: (r.discount_code as string) ?? null,
       created_at: r.created_at as string,
       answers: answersBySubmission.get(r.id as string) ?? {},
@@ -283,61 +323,68 @@ export function listSubmissions(businessId: string, opts: ListSubmissionsOptions
   };
 }
 
-export function updateAnswer(businessId: string, submissionId: string, questionId: string, value: unknown) {
-  const db = getDb();
-  const sub = db
-    .prepare("SELECT id FROM submissions WHERE id = ? AND business_id = ?")
-    .get(submissionId, businessId);
+export async function updateAnswer(
+  businessId: string,
+  submissionId: string,
+  questionId: string,
+  value: unknown,
+) {
+  const sub = await one("SELECT id FROM submissions WHERE id = $1 AND business_id = $2", [
+    submissionId,
+    businessId,
+  ]);
   if (!sub) throw new ApiError(404, "Registro no encontrado");
-  const existing = db
-    .prepare("SELECT id FROM answers WHERE submission_id = ? AND question_id = ?")
-    .get(submissionId, questionId) as { id: string } | undefined;
+
+  const existing = await one<{ id: string }>(
+    "SELECT id FROM answers WHERE submission_id = $1 AND question_id = $2",
+    [submissionId, questionId],
+  );
   const json = value === null || value === "" ? null : JSON.stringify(value);
   if (existing) {
-    db.prepare("UPDATE answers SET value_json = ? WHERE id = ?").run(json, existing.id);
+    await run("UPDATE answers SET value_json = $1 WHERE id = $2", [json, existing.id]);
   } else {
-    db.prepare("INSERT INTO answers (id, submission_id, question_id, value_json) VALUES (?, ?, ?, ?)").run(
-      uid(),
-      submissionId,
-      questionId,
-      json,
+    await run(
+      "INSERT INTO answers (id, submission_id, question_id, value_json) VALUES ($1, $2, $3, $4)",
+      [uid(), submissionId, questionId, json],
     );
   }
+
   // Mantener sincronizado el campo desnormalizado si la pregunta mapea a producto
-  const q = db.prepare("SELECT maps_to FROM questions WHERE id = ?").get(questionId) as
-    | { maps_to: string | null }
-    | undefined;
+  const q = await one<{ maps_to: string | null }>(
+    "SELECT maps_to FROM questions WHERE id = $1",
+    [questionId],
+  );
   if (q?.maps_to === "product") {
-    db.prepare("UPDATE submissions SET product = ? WHERE id = ?").run(
+    await run("UPDATE submissions SET product = $1 WHERE id = $2", [
       typeof value === "string" ? value : Array.isArray(value) ? value.join(", ") : null,
       submissionId,
-    );
+    ]);
   }
 }
 
-export function deleteSubmission(businessId: string, submissionId: string) {
-  const db = getDb();
-  const sub = db
-    .prepare("SELECT customer_id FROM submissions WHERE id = ? AND business_id = ?")
-    .get(submissionId, businessId) as { customer_id: string | null } | undefined;
+export async function deleteSubmission(businessId: string, submissionId: string) {
+  const sub = await one<{ customer_id: string | null }>(
+    "SELECT customer_id FROM submissions WHERE id = $1 AND business_id = $2",
+    [submissionId, businessId],
+  );
   if (!sub) throw new ApiError(404, "Registro no encontrado");
-  tx(() => {
-    db.prepare("DELETE FROM submissions WHERE id = ?").run(submissionId);
+
+  await tx(async (client) => {
+    await run("DELETE FROM submissions WHERE id = $1", [submissionId], client);
     if (sub.customer_id) {
       // Recalcular contadores del cliente
-      const agg = db
-        .prepare(
-          "SELECT COUNT(*) AS visits, MIN(created_at) AS first, MAX(created_at) AS last FROM submissions WHERE customer_id = ?",
-        )
-        .get(sub.customer_id) as { visits: number; first: string | null; last: string | null };
-      if (agg.visits === 0) {
-        db.prepare("DELETE FROM customers WHERE id = ?").run(sub.customer_id);
+      const agg = await one<{ visits: string; first: string | null; last: string | null }>(
+        "SELECT COUNT(*) AS visits, MIN(created_at) AS first, MAX(created_at) AS last FROM submissions WHERE customer_id = $1",
+        [sub.customer_id],
+        client,
+      );
+      if (num(agg?.visits) === 0) {
+        await run("DELETE FROM customers WHERE id = $1", [sub.customer_id], client);
       } else {
-        db.prepare("UPDATE customers SET visits = ?, first_visit_at = ?, last_visit_at = ? WHERE id = ?").run(
-          agg.visits,
-          agg.first,
-          agg.last,
-          sub.customer_id,
+        await run(
+          "UPDATE customers SET visits = $1, first_visit_at = $2, last_visit_at = $3 WHERE id = $4",
+          [num(agg?.visits), agg?.first, agg?.last, sub.customer_id],
+          client,
         );
       }
     }

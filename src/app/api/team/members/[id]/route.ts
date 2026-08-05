@@ -9,13 +9,13 @@ export const PATCH = withTenant(async (tenant, req, ctx: { params: Promise<{ id:
   requireRole(tenant, ["owner"]);
   const { id } = await ctx.params;
   const { role } = await parseBody(req, schema);
-  updateMemberRole(tenant.business.id, id, role);
+  await updateMemberRole(tenant.business.id, id, role);
   return NextResponse.json({ ok: true });
 });
 
 export const DELETE = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   requireRole(tenant, ["owner", "admin"]);
   const { id } = await ctx.params;
-  removeMember(tenant.business.id, id);
+  await removeMember(tenant.business.id, id);
   return NextResponse.json({ ok: true });
 });

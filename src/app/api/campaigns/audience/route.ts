@@ -11,7 +11,7 @@ const schema = z.object({
 /** Cuántos clientes recibirían la campaña + muestra para la vista previa. */
 export const POST = withTenant(async (tenant, req) => {
   const { segment_id, channel } = await parseBody(req, schema);
-  const audience = resolveAudience(tenant.business.id, segment_id, channel);
+  const audience = await resolveAudience(tenant.business.id, segment_id, channel);
   const sample = audience[0];
   return NextResponse.json({
     count: audience.length,

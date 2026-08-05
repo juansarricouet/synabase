@@ -17,7 +17,7 @@ export const POST = withPublic(async (req) => {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const data = await parseBody(req, createSchema);
-  const business = createBusiness(user.id, data);
+  const business = await createBusiness(user.id, data);
   const store = await cookies();
   store.set(BIZ_COOKIE, business.id, { httpOnly: true, sameSite: "lax", path: "/" });
   return NextResponse.json({ business });
@@ -37,6 +37,6 @@ const updateSchema = z.object({
 export const PATCH = withTenant(async (tenant, req) => {
   requireRole(tenant, ["owner", "admin"]);
   const data = await parseBody(req, updateSchema);
-  const business = updateBusiness(tenant.business.id, data);
+  const business = await updateBusiness(tenant.business.id, data);
   return NextResponse.json({ business });
 });

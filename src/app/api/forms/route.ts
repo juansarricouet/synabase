@@ -4,7 +4,7 @@ import { parseBody, withTenant } from "@/server/http";
 import { createForm, listForms } from "@/server/services/forms";
 
 export const GET = withTenant(async (tenant) => {
-  return NextResponse.json({ forms: listForms(tenant.business.id) });
+  return NextResponse.json({ forms: await listForms(tenant.business.id) });
 });
 
 const schema = z.object({
@@ -14,6 +14,6 @@ const schema = z.object({
 
 export const POST = withTenant(async (tenant, req) => {
   const { name, withDefaults } = await parseBody(req, schema);
-  const form = createForm(tenant.business.id, name, { withDefaults });
+  const form = await createForm(tenant.business.id, name, { withDefaults });
   return NextResponse.json({ form });
 });

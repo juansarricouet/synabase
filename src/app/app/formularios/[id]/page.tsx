@@ -14,7 +14,7 @@ export default async function FormBuilderPage(props: {
   const { id } = await props.params;
   const { tab } = await props.searchParams;
   const tenant = await requireTenant();
-  const form = getForm(tenant.business.id, id);
+  const form = await getForm(tenant.business.id, id);
   if (!form) notFound();
 
   return (

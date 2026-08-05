@@ -9,6 +9,6 @@ import { dispatchCampaign } from "@/server/services/campaigns";
  */
 export const POST = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  const campaign = dispatchCampaign(tenant.business.id, id);
+  const campaign = await dispatchCampaign(tenant.business.id, id);
   return NextResponse.json({ campaign });
 });

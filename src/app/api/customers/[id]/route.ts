@@ -15,12 +15,12 @@ const patchSchema = z.object({
 export const PATCH = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const patch = await parseBody(req, patchSchema);
-  updateCustomer(tenant.business.id, id, patch);
+  await updateCustomer(tenant.business.id, id, patch);
   return NextResponse.json({ ok: true });
 });
 
 export const DELETE = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  deleteCustomer(tenant.business.id, id);
+  await deleteCustomer(tenant.business.id, id);
   return NextResponse.json({ ok: true });
 });

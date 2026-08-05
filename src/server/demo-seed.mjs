@@ -5,10 +5,8 @@
  *
  * Se usa desde `npm run seed` (scripts/seed.mjs) y desde POST /api/auth/demo.
  */
-import { DatabaseSync } from "node:sqlite";
+import pg from "pg";
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
 import { SCHEMA } from "./schema.mjs";
 
 export const DEMO_EMAIL = "demo@synapbase.app";
@@ -101,77 +99,102 @@ function atHour(dayMs, hour, rand) {
   return d;
 }
 
-export function ensureDemoData(dbPath) {
-  const resolved = dbPath || process.env.SYNAPBASE_DB || path.join(process.cwd(), "data", "synapbase.db");
-  fs.mkdirSync(path.dirname(resolved), { recursive: true });
-  const db = new DatabaseSync(resolved);
-  db.exec("PRAGMA journal_mode = WAL;");
-  db.exec("PRAGMA foreign_keys = ON;");
-  db.exec(SCHEMA);
+function normalizeForEmail(s) {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
 
-  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(DEMO_EMAIL);
-  if (existing) {
-    db.close();
-    return { created: false };
+function connectionString() {
+  const url =
+    process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SYNAPBASE_DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      "Falta DATABASE_URL con la cadena de conexión de PostgreSQL. Ver DEPLOY.md.",
+    );
   }
+  return url;
+}
 
-  const rand = rng(20260728);
-  const now = Date.now();
-  const nowIso = () => new Date().toISOString();
+function isLocal(url) {
+  return /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url);
+}
 
-  db.exec("BEGIN");
+export async function ensureDemoData() {
+  const url = connectionString();
+  const client = new pg.Client({
+    connectionString: url,
+    ssl: isLocal(url) ? false : { rejectUnauthorized: false },
+  });
+  await client.connect();
+
   try {
+    await client.query(SCHEMA);
+
+    const existing = await client.query("SELECT id FROM users WHERE email = $1", [DEMO_EMAIL]);
+    if (existing.rows.length > 0) return { created: false };
+
+    const rand = rng(20260728);
+    const now = Date.now();
+
+    await client.query("BEGIN");
+
     /* ————— Cuentas ————— */
     const ownerId = uid();
-    db.prepare("INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)").run(
-      ownerId, DEMO_EMAIL, "Martina López", hashPassword(DEMO_PASSWORD), new Date(now - 240 * DAY).toISOString(),
+    await client.query(
+      "INSERT INTO users (id, email, name, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)",
+      [ownerId, DEMO_EMAIL, "Martina López", hashPassword(DEMO_PASSWORD), new Date(now - 240 * DAY).toISOString()],
     );
     const adminId = uid();
-    db.prepare("INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)").run(
-      adminId, "julian@cafemartina.com", "Julián Paz", hashPassword(DEMO_PASSWORD), new Date(now - 200 * DAY).toISOString(),
+    await client.query(
+      "INSERT INTO users (id, email, name, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)",
+      [adminId, "julian@cafemartina.com", "Julián Paz", hashPassword(DEMO_PASSWORD), new Date(now - 200 * DAY).toISOString()],
     );
 
     const bizId = uid();
-    db.prepare(
+    await client.query(
       `INSERT INTO businesses (id, name, slug, category, address, phone, brand_color, hours, plan, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      bizId, "Café Martina", "cafe-martina", "Cafetería de especialidad",
-      "Armenia 1602, Palermo, CABA", "+54 11 5555 0199", "#5b5bd6",
-      "Lun a Vie 8:00–20:00 · Sáb y Dom 9:00–21:00", "pro",
-      new Date(now - 240 * DAY).toISOString(),
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        bizId, "Café Martina", "cafe-martina", "Cafetería de especialidad",
+        "Armenia 1602, Palermo, CABA", "+54 11 5555 0199", "#5b5bd6",
+        "Lun a Vie 8:00–20:00 · Sáb y Dom 9:00–21:00", "pro",
+        new Date(now - 240 * DAY).toISOString(),
+      ],
     );
-    db.prepare("INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES (?, ?, ?, 'owner', ?)").run(
-      uid(), ownerId, bizId, new Date(now - 240 * DAY).toISOString(),
+    await client.query(
+      "INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES ($1, $2, $3, 'owner', $4)",
+      [uid(), ownerId, bizId, new Date(now - 240 * DAY).toISOString()],
     );
-    db.prepare("INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES (?, ?, ?, 'admin', ?)").run(
-      uid(), adminId, bizId, new Date(now - 200 * DAY).toISOString(),
+    await client.query(
+      "INSERT INTO memberships (id, user_id, business_id, role, created_at) VALUES ($1, $2, $3, 'admin', $4)",
+      [uid(), adminId, bizId, new Date(now - 200 * DAY).toISOString()],
     );
-    db.prepare(
-      "INSERT INTO invitations (id, business_id, email, role, token, status, created_at) VALUES (?, ?, ?, 'miembro', ?, 'pending', ?)",
-    ).run(uid(), bizId, "caja@cafemartina.com", "inv" + Math.floor(rand() * 1e9).toString(36), new Date(now - 6 * DAY).toISOString());
+    await client.query(
+      "INSERT INTO invitations (id, business_id, email, role, token, status, created_at) VALUES ($1, $2, $3, 'miembro', $4, 'pending', $5)",
+      [uid(), bizId, "caja@cafemartina.com", "inv" + Math.floor(rand() * 1e9).toString(36), new Date(now - 6 * DAY).toISOString()],
+    );
 
     /* ————— Formulario principal ————— */
     const formId = uid();
     const formCreated = new Date(now - 235 * DAY).toISOString();
-    db.prepare(
+    await client.query(
       `INSERT INTO forms (id, business_id, name, slug, status, incentive, welcome_title, welcome_text, success_title, success_text, theme_json, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      formId, bizId, "Formulario principal", "cafe-martina",
-      "10% de descuento en tu próxima visita",
-      "¡Hola! Somos Café Martina ☕",
-      "Contanos quién sos y llevate un beneficio para tu próxima visita. Te toma 30 segundos.",
-      "¡Gracias por contarnos!",
-      "Mostrá este código en la caja para usar tu descuento la próxima vez que vengas.",
-      JSON.stringify({ color: "#5b5bd6", showLogo: true, emoji: "☕" }),
-      formCreated, formCreated,
+       VALUES ($1, $2, $3, $4, 'active', $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        formId, bizId, "Formulario principal", "cafe-martina",
+        "10% de descuento en tu próxima visita",
+        "¡Hola! Somos Café Martina ☕",
+        "Contanos quién sos y llevate un beneficio para tu próxima visita. Te toma 30 segundos.",
+        "¡Gracias por contarnos!",
+        "Mostrá este código en la caja para usar tu descuento la próxima vez que vengas.",
+        JSON.stringify({ color: "#5b5bd6", showLogo: true, emoji: "☕" }),
+        formCreated, formCreated,
+      ],
     );
 
     const q = {};
     const questionDefs = [
-      ["name", { type: "text", label: "¿Cómo te llamás?", placeholder: "Tu nombre", required: 1, maps_to: "name" }],
-      ["product", { type: "multiselect", label: "¿Qué pediste hoy?", options: PRODUCTS.map((p) => p.name), required: 1, maps_to: "product" }],
+      ["name", { type: "text", label: "¿Cómo te llamás?", placeholder: "Tu nombre", required: true, maps_to: "name" }],
+      ["product", { type: "multiselect", label: "¿Qué pediste hoy?", options: PRODUCTS.map((p) => p.name), required: true, maps_to: "product" }],
       ["phone", { type: "text", label: "Tu teléfono", placeholder: "Ej.: 11 5555 0000", maps_to: "phone" }],
       ["email", { type: "text", label: "Tu email", placeholder: "nombre@email.com", maps_to: "email" }],
       ["source", { type: "select", label: "¿Cómo nos conociste?", options: SOURCES }],
@@ -180,52 +203,59 @@ export function ensureDemoData(dbPath) {
       ["age", { type: "number", label: "¿Cuántos años tenés?", placeholder: "Ej.: 28", maps_to: "age" }],
       ["amount", { type: "number", label: "¿Cuánto gastaste hoy aprox.?", placeholder: "En pesos", maps_to: "amount" }],
     ];
-    questionDefs.forEach(([key, def], i) => {
+    for (let i = 0; i < questionDefs.length; i++) {
+      const [key, def] = questionDefs[i];
       const qid = uid();
       q[key] = qid;
-      db.prepare(
+      await client.query(
         `INSERT INTO questions (id, form_id, type, label, placeholder, options_json, required, active, position, maps_to, scale_max, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
-      ).run(
-        qid, formId, def.type, def.label, def.placeholder ?? null,
-        JSON.stringify(def.options ?? []), def.required ?? 0, i,
-        def.maps_to ?? null, def.scale_max ?? null, formCreated,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10, $11)`,
+        [
+          qid, formId, def.type, def.label, def.placeholder ?? null,
+          JSON.stringify(def.options ?? []), !!def.required, i,
+          def.maps_to ?? null, def.scale_max ?? null, formCreated,
+        ],
       );
-    });
+    }
 
     /* Segundo formulario, para mostrar multi-formulario */
     const form2Id = uid();
     const f2Created = new Date(now - 90 * DAY).toISOString();
-    db.prepare(
+    await client.query(
       `INSERT INTO forms (id, business_id, name, slug, status, incentive, welcome_title, welcome_text, theme_json, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 'paused', ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      form2Id, bizId, "Encuesta brunch de fin de semana", "martina-brunch",
-      "Una medialuna de regalo",
-      "¿Un minuto para el brunch? 🥐",
-      "Queremos armar la mejor carta de brunch de Palermo. Ayudanos con tu opinión.",
-      JSON.stringify({ color: "#b45309", showLogo: true, emoji: "🥐" }),
-      f2Created, f2Created,
+       VALUES ($1, $2, $3, $4, 'paused', $5, $6, $7, $8, $9, $10)`,
+      [
+        form2Id, bizId, "Encuesta brunch de fin de semana", "martina-brunch",
+        "Una medialuna de regalo",
+        "¿Un minuto para el brunch? 🥐",
+        "Queremos armar la mejor carta de brunch de Palermo. Ayudanos con tu opinión.",
+        JSON.stringify({ color: "#b45309", showLogo: true, emoji: "🥐" }),
+        f2Created, f2Created,
+      ],
     );
-    [
-      { type: "text", label: "¿Cómo te llamás?", required: 1, maps_to: "name" },
+    const form2Questions = [
+      { type: "text", label: "¿Cómo te llamás?", required: true, maps_to: "name" },
       { type: "select", label: "¿Qué día venís más seguido?", options: ["Sábado", "Domingo", "Ambos", "Casi nunca"] },
       { type: "multiselect", label: "¿Qué te gustaría ver en la carta?", options: ["Pancakes", "Huevos benedictinos", "Croissant relleno", "Jugos prensados", "Opción vegana"] },
       { type: "scale", label: "¿Cómo calificás nuestro brunch actual?", scale_max: 5 },
-    ].forEach((def, i) => {
-      db.prepare(
+    ];
+    for (let i = 0; i < form2Questions.length; i++) {
+      const def = form2Questions[i];
+      await client.query(
         `INSERT INTO questions (id, form_id, type, label, placeholder, options_json, required, active, position, maps_to, scale_max, created_at)
-         VALUES (?, ?, ?, ?, NULL, ?, ?, 1, ?, ?, ?, ?)`,
-      ).run(uid(), form2Id, def.type, def.label, JSON.stringify(def.options ?? []), def.required ?? 0, i, def.maps_to ?? null, def.scale_max ?? null, f2Created);
-    });
+         VALUES ($1, $2, $3, $4, NULL, $5, $6, TRUE, $7, $8, $9, $10)`,
+        [uid(), form2Id, def.type, def.label, JSON.stringify(def.options ?? []), !!def.required, i, def.maps_to ?? null, def.scale_max ?? null, f2Created],
+      );
+    }
 
     /* ————— Etiquetas ————— */
     const tagIds = {};
     for (const [name, color] of [["VIP", "amber"], ["Frecuente", "violet"], ["Nuevo", "sky"], ["Vegetariano", "green"]]) {
       const id = uid();
       tagIds[name] = id;
-      db.prepare("INSERT INTO tags (id, business_id, name, color, created_at) VALUES (?, ?, ?, ?, ?)").run(
-        id, bizId, name, color, formCreated,
+      await client.query(
+        "INSERT INTO tags (id, business_id, name, color, created_at) VALUES ($1, $2, $3, $4, $5)",
+        [id, bizId, name, color, formCreated],
       );
     }
 
@@ -260,7 +290,6 @@ export function ensureDemoData(dbPath) {
       const saysAge = rand() < 0.66;
       const age = saysAge ? 18 + Math.floor(Math.pow(rand(), 1.15) * 42) : null;
 
-      // Preferencias de consumo propias de cada cliente
       const favIdx = pickWeighted(rand, PRODUCTS.map((_, idx) => idx), PRODUCTS.map((p) => p.w));
       const source = pickWeighted(rand, SOURCES, SOURCE_W);
 
@@ -270,22 +299,13 @@ export function ensureDemoData(dbPath) {
         gender: saysGender ? (gender === "F" ? "Femenino" : "Masculino") : null,
         age,
         phone: hasPhone ? `115${String(Math.floor(1000000 + rand() * 8999999))}` : null,
-        email: hasEmail ? `${first.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()}.${last.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()}${Math.floor(rand() * 90) + 10}@gmail.com` : null,
+        email: hasEmail
+          ? `${normalizeForEmail(first)}.${normalizeForEmail(last)}${Math.floor(rand() * 90) + 10}@gmail.com`
+          : null,
         seniorityDays, visits, favIdx, source,
         npsBase: 6 + Math.floor(rand() * 5),
       });
     }
-
-    const insCustomer = db.prepare(
-      `INSERT INTO customers (id, business_id, name, phone, email, gender, age, first_visit_at, last_visit_at, visits, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    const insSub = db.prepare(
-      `INSERT INTO submissions (id, business_id, form_id, customer_id, product, amount, discount_code, hour, weekday, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    );
-    const insAns = db.prepare("INSERT INTO answers (id, submission_id, question_id, value_json) VALUES (?, ?, ?, ?)");
-    const insScan = db.prepare("INSERT INTO scans (id, business_id, form_id, created_at) VALUES (?, ?, ?, ?)");
 
     let totalSubs = 0;
     for (const c of customers) {
@@ -300,7 +320,6 @@ export function ensureDemoData(dbPath) {
       }
       visitDays.sort((a, b) => a - b);
 
-      // Precomputar fecha+hora de cada visita para conocer primera/última
       const visitDates = visitDays.map((dayMs) => {
         const hour = pickHour(rand);
         return { hour, date: atHour(dayMs, hour, rand) };
@@ -309,12 +328,14 @@ export function ensureDemoData(dbPath) {
       const lastIso = visitDates[visitDates.length - 1].date.toISOString();
 
       // El cliente debe existir antes que sus visitas (FK)
-      insCustomer.run(
-        c.id, bizId, c.name, c.phone, c.email, c.gender, c.age,
-        firstIso, lastIso, c.visits, firstIso,
+      await client.query(
+        `INSERT INTO customers (id, business_id, name, phone, email, gender, age, first_visit_at, last_visit_at, visits, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [c.id, bizId, c.name, c.phone, c.email, c.gender, c.age, firstIso, lastIso, c.visits, firstIso],
       );
 
-      visitDates.forEach(({ hour, date }, idx) => {
+      for (let idx = 0; idx < visitDates.length; idx++) {
+        const { hour, date } = visitDates[idx];
         const iso = date.toISOString();
 
         // Pedido: favorito con alta probabilidad + acompañamiento
@@ -330,48 +351,62 @@ export function ensureDemoData(dbPath) {
         const amount = Math.round(items.reduce((a, p) => a + p.price, 0) * (0.92 + rand() * 0.25));
 
         const subId = uid();
-        insSub.run(
-          subId, bizId, formId, c.id, productStr, amount,
-          `MAR-${Math.floor(rand() * 1296).toString(36).padStart(2, "0").toUpperCase()}${Math.floor(rand() * 1296).toString(36).padStart(2, "0").toUpperCase()}`,
-          hour, localWeekday(date), iso,
+        const code = `MAR-${Math.floor(rand() * 1296).toString(36).padStart(2, "0").toUpperCase()}${Math.floor(rand() * 1296).toString(36).padStart(2, "0").toUpperCase()}`;
+        await client.query(
+          `INSERT INTO submissions (id, business_id, form_id, customer_id, product, amount, discount_code, hour, weekday, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [subId, bizId, formId, c.id, productStr, amount, code, hour, localWeekday(date), iso],
         );
         totalSubs++;
 
-        insAns.run(uid(), subId, q.name, JSON.stringify(c.name.split(" ")[0]));
-        insAns.run(uid(), subId, q.product, JSON.stringify(items.map((p) => p.name)));
-        if (c.phone) insAns.run(uid(), subId, q.phone, JSON.stringify(c.phone));
-        if (c.email && rand() < 0.8) insAns.run(uid(), subId, q.email, JSON.stringify(c.email));
-        if (idx === 0) insAns.run(uid(), subId, q.source, JSON.stringify(c.source));
+        const answers = [
+          [q.name, c.name.split(" ")[0]],
+          [q.product, items.map((p) => p.name)],
+        ];
+        if (c.phone) answers.push([q.phone, c.phone]);
+        if (c.email && rand() < 0.8) answers.push([q.email, c.email]);
+        if (idx === 0) answers.push([q.source, c.source]);
         if (rand() < 0.75) {
-          const nps = Math.max(1, Math.min(10, c.npsBase + Math.floor(rand() * 3) - 1));
-          insAns.run(uid(), subId, q.nps, JSON.stringify(nps));
+          answers.push([q.nps, Math.max(1, Math.min(10, c.npsBase + Math.floor(rand() * 3) - 1))]);
         }
-        if (c.gender) insAns.run(uid(), subId, q.gender, JSON.stringify(c.gender));
-        if (c.age != null) insAns.run(uid(), subId, q.age, JSON.stringify(c.age));
-        insAns.run(uid(), subId, q.amount, JSON.stringify(amount));
+        if (c.gender) answers.push([q.gender, c.gender]);
+        if (c.age != null) answers.push([q.age, c.age]);
+        answers.push([q.amount, amount]);
+
+        for (const [qid, value] of answers) {
+          await client.query(
+            "INSERT INTO answers (id, submission_id, question_id, value_json) VALUES ($1, $2, $3, $4)",
+            [uid(), subId, qid, JSON.stringify(value)],
+          );
+        }
 
         // Escaneos: cada visita implica 1 escaneo + escaneos que no convirtieron
-        insScan.run(uid(), bizId, formId, iso);
+        await client.query(
+          "INSERT INTO scans (id, business_id, form_id, created_at) VALUES ($1, $2, $3, $4)",
+          [uid(), bizId, formId, iso],
+        );
         if (rand() < 0.75) {
           const extra = atHour(date.getTime(), pickHour(rand), rand);
-          insScan.run(uid(), bizId, formId, extra.toISOString());
+          await client.query(
+            "INSERT INTO scans (id, business_id, form_id, created_at) VALUES ($1, $2, $3, $4)",
+            [uid(), bizId, formId, extra.toISOString()],
+          );
         }
-      });
+      }
     }
 
     /* Etiquetas asignadas con criterio */
     const byVisits = [...customers].sort((a, b) => b.visits - a.visits);
-    for (const c of byVisits.slice(0, 9)) {
-      db.prepare("INSERT OR IGNORE INTO customer_tags (customer_id, tag_id) VALUES (?, ?)").run(c.id, tagIds.VIP);
-    }
-    for (const c of customers.filter((x) => x.visits >= 6)) {
-      db.prepare("INSERT OR IGNORE INTO customer_tags (customer_id, tag_id) VALUES (?, ?)").run(c.id, tagIds.Frecuente);
-    }
-    for (const c of customers.filter((x) => x.seniorityDays <= 21)) {
-      db.prepare("INSERT OR IGNORE INTO customer_tags (customer_id, tag_id) VALUES (?, ?)").run(c.id, tagIds.Nuevo);
-    }
-    for (const c of customers) {
-      if (rand() < 0.07) db.prepare("INSERT OR IGNORE INTO customer_tags (customer_id, tag_id) VALUES (?, ?)").run(c.id, tagIds.Vegetariano);
+    const tagPairs = [];
+    for (const c of byVisits.slice(0, 9)) tagPairs.push([c.id, tagIds.VIP]);
+    for (const c of customers.filter((x) => x.visits >= 6)) tagPairs.push([c.id, tagIds.Frecuente]);
+    for (const c of customers.filter((x) => x.seniorityDays <= 21)) tagPairs.push([c.id, tagIds.Nuevo]);
+    for (const c of customers) if (rand() < 0.07) tagPairs.push([c.id, tagIds.Vegetariano]);
+    for (const [customerId, tagId] of tagPairs) {
+      await client.query(
+        "INSERT INTO customer_tags (customer_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [customerId, tagId],
+      );
     }
 
     /* Notas en algunos clientes destacados */
@@ -381,9 +416,9 @@ export function ensureDemoData(dbPath) {
       "Trabaja en la oficina de la esquina, viene con el equipo los viernes.",
       "Le gustó la propuesta vegana, preguntar por nuevos productos.",
     ];
-    byVisits.slice(0, 4).forEach((c, i) => {
-      db.prepare("UPDATE customers SET notes = ? WHERE id = ?").run(notes[i], c.id);
-    });
+    for (let i = 0; i < 4; i++) {
+      await client.query("UPDATE customers SET notes = $1 WHERE id = $2", [notes[i], byVisits[i].id]);
+    }
 
     /* ————— Segmentos ————— */
     const segs = [
@@ -412,58 +447,65 @@ export function ensureDemoData(dbPath) {
     for (const s of segs) {
       const id = uid();
       segIds[s.name] = id;
-      db.prepare(
-        "INSERT INTO segments (id, business_id, name, description, rules_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ).run(id, bizId, s.name, s.description, JSON.stringify(s.rules), new Date(now - 120 * DAY).toISOString(), new Date(now - 40 * DAY).toISOString());
+      await client.query(
+        "INSERT INTO segments (id, business_id, name, description, rules_json, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [id, bizId, s.name, s.description, JSON.stringify(s.rules), new Date(now - 120 * DAY).toISOString(), new Date(now - 40 * DAY).toISOString()],
+      );
     }
 
     /* ————— Campañas ————— */
     const camp1 = uid();
     const sentAt = new Date(now - 52 * DAY).toISOString();
-    db.prepare(
+    await client.query(
       `INSERT INTO campaigns (id, business_id, name, channel, segment_id, message, status, sent_at, audience_count, created_at, updated_at)
-       VALUES (?, ?, ?, 'whatsapp', ?, ?, 'sent', ?, ?, ?, ?)`,
-    ).run(
-      camp1, bizId, "Volvió el budín de banana 🍌", segIds["Clientes frecuentes"],
-      "Hola {{nombre}} 👋 ¡Volvió el budín de banana que tanto pedían! Esta semana, si venís por la tarde, te lo llevás con 2x1. Te esperamos en Armenia 1602.",
-      sentAt, 0, new Date(now - 54 * DAY).toISOString(), sentAt,
+       VALUES ($1, $2, $3, 'whatsapp', $4, $5, 'sent', $6, 0, $7, $8)`,
+      [
+        camp1, bizId, "Volvió el budín de banana 🍌", segIds["Clientes frecuentes"],
+        "Hola {{nombre}} 👋 ¡Volvió el budín de banana que tanto pedían! Esta semana, si venís por la tarde, te lo llevás con 2x1. Te esperamos en Armenia 1602.",
+        sentAt, new Date(now - 54 * DAY).toISOString(), sentAt,
+      ],
     );
     // Materializar destinatarios de la campaña enviada
     const freqCustomers = customers.filter((c) => c.visits >= 5 && c.phone);
-    let sentCount = 0;
     for (const c of freqCustomers) {
-      db.prepare(
-        "INSERT INTO campaign_recipients (id, campaign_id, customer_id, channel_to, status, sent_at, created_at) VALUES (?, ?, ?, ?, 'sent', ?, ?)",
-      ).run(uid(), camp1, c.id, c.phone, sentAt, sentAt);
-      sentCount++;
+      await client.query(
+        "INSERT INTO campaign_recipients (id, campaign_id, customer_id, channel_to, status, sent_at, created_at) VALUES ($1, $2, $3, $4, 'sent', $5, $6)",
+        [uid(), camp1, c.id, c.phone, sentAt, sentAt],
+      );
     }
-    db.prepare("UPDATE campaigns SET audience_count = ? WHERE id = ?").run(sentCount, camp1);
+    await client.query("UPDATE campaigns SET audience_count = $1 WHERE id = $2", [freqCustomers.length, camp1]);
 
-    db.prepare(
+    await client.query(
       `INSERT INTO campaigns (id, business_id, name, channel, segment_id, message, status, audience_count, created_at, updated_at)
-       VALUES (?, ?, ?, 'whatsapp', ?, ?, 'draft', 0, ?, ?)`,
-    ).run(
-      uid(), bizId, "Te extrañamos ❤️", segIds["Inactivos hace 30+ días"],
-      "Hola {{nombre}}, hace un tiempo que no venís por Café Martina. Esta semana tenés un beneficio especial esperándote: mostrá este mensaje y llevate un 15% en tu {{producto_favorito}}.",
-      new Date(now - 9 * DAY).toISOString(), new Date(now - 2 * DAY).toISOString(),
+       VALUES ($1, $2, $3, 'whatsapp', $4, $5, 'draft', 0, $6, $7)`,
+      [
+        uid(), bizId, "Te extrañamos ❤️", segIds["Inactivos hace 30+ días"],
+        "Hola {{nombre}}, hace un tiempo que no venís por Café Martina. Esta semana tenés un beneficio especial esperándote: mostrá este mensaje y llevate un 15% en tu {{producto_favorito}}.",
+        new Date(now - 9 * DAY).toISOString(), new Date(now - 2 * DAY).toISOString(),
+      ],
     );
 
-    db.prepare(
+    await client.query(
       `INSERT INTO campaigns (id, business_id, name, channel, segment_id, subject, message, status, scheduled_for, audience_count, created_at, updated_at)
-       VALUES (?, ?, ?, 'email', ?, ?, ?, 'scheduled', ?, 0, ?, ?)`,
-    ).run(
-      uid(), bizId, "Novedades de la carta de invierno", segIds["Ticket alto"],
-      "Llegó la carta de invierno ❄️",
-      "Hola {{nombre_completo}}: como cliente de la casa queremos que seas de los primeros en probar la nueva carta de invierno. Reservá tu mesa esta semana y el postre va por nuestra cuenta.",
-      new Date(now + 5 * DAY).toISOString(), new Date(now - 1 * DAY).toISOString(), new Date(now - 1 * DAY).toISOString(),
+       VALUES ($1, $2, $3, 'email', $4, $5, $6, 'scheduled', $7, 0, $8, $9)`,
+      [
+        uid(), bizId, "Novedades de la carta de invierno", segIds["Ticket alto"],
+        "Llegó la carta de invierno ❄️",
+        "Hola {{nombre_completo}}: como cliente de la casa queremos que seas de los primeros en probar la nueva carta de invierno. Reservá tu mesa esta semana y el postre va por nuestra cuenta.",
+        new Date(now + 5 * DAY).toISOString(), new Date(now - 1 * DAY).toISOString(), new Date(now - 1 * DAY).toISOString(),
+      ],
     );
 
-    db.exec("COMMIT");
-    db.close();
+    await client.query("COMMIT");
     return { created: true, customers: customers.length, submissions: totalSubs };
   } catch (err) {
-    db.exec("ROLLBACK");
-    db.close();
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      /* la transacción podía no estar abierta */
+    }
     throw err;
+  } finally {
+    await client.end();
   }
 }

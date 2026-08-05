@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function CampaignsPage(props: { searchParams: Promise<{ segmento?: string }> }) {
   const { segmento } = await props.searchParams;
   const tenant = await requireTenant();
-  const campaigns = listCampaigns(tenant.business.id);
-  const segments = listSegments(tenant.business.id);
+  const campaigns = await listCampaigns(tenant.business.id);
+  const segments = await listSegments(tenant.business.id);
 
   return (
     <div>

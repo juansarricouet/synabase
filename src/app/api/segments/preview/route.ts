@@ -9,7 +9,7 @@ const schema = z.object({ rules: z.array(ruleSchema).max(12) });
 /** Conteo en vivo de la audiencia mientras se arma el segmento. */
 export const POST = withTenant(async (tenant, req) => {
   const { rules } = await parseBody(req, schema);
-  const matched = evaluateRules(tenant.business.id, rules);
+  const matched = await evaluateRules(tenant.business.id, rules);
   return NextResponse.json({
     count: matched.length,
     with_phone: matched.filter((c) => c.phone).length,

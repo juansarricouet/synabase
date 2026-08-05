@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function FormsPage() {
   const tenant = await requireTenant();
-  const forms = listForms(tenant.business.id);
+  const forms = await listForms(tenant.business.id);
 
   return (
     <div>

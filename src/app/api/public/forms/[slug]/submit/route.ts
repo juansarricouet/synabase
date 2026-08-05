@@ -26,7 +26,7 @@ export const POST = withPublic(async (req, ctx: { params: Promise<{ slug: string
     return NextResponse.json({ error: "Demasiados envíos seguidos. Esperá unos segundos." }, { status: 429 });
   }
   const { answers } = await parseBody(req, schema);
-  const result = submitForm(slug, answers);
+  const result = await submitForm(slug, answers);
   log.info("public.submit", { slug, firstTime: result.first_time });
   return NextResponse.json(result);
 });

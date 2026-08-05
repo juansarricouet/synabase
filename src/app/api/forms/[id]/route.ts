@@ -5,7 +5,7 @@ import { deleteForm, getForm, updateForm } from "@/server/services/forms";
 
 export const GET = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  const form = getForm(tenant.business.id, id);
+  const form = await getForm(tenant.business.id, id);
   if (!form) return NextResponse.json({ error: "Formulario no encontrado" }, { status: 404 });
   return NextResponse.json({ form });
 });
@@ -30,12 +30,12 @@ const patchSchema = z.object({
 export const PATCH = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const patch = await parseBody(req, patchSchema);
-  const form = updateForm(tenant.business.id, id, patch);
+  const form = await updateForm(tenant.business.id, id, patch);
   return NextResponse.json({ form });
 });
 
 export const DELETE = withTenant(async (tenant, _req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  deleteForm(tenant.business.id, id);
+  await deleteForm(tenant.business.id, id);
   return NextResponse.json({ ok: true });
 });

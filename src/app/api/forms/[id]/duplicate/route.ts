@@ -11,6 +11,6 @@ const schema = z.object({
 export const POST = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const data = await parseBody(req, schema);
-  const form = duplicateForm(tenant.business.id, id, data);
+  const form = await duplicateForm(tenant.business.id, id, data);
   return NextResponse.json({ form });
 });

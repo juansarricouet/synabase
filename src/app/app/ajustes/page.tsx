@@ -1,6 +1,6 @@
 import { requireTenant } from "@/server/guard";
 import { listInvitations, listMembers } from "@/server/services/business";
-import { getDb } from "@/server/db";
+import { num, one } from "@/server/db";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { SettingsView } from "./SettingsView";
 
@@ -8,13 +8,14 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const tenant = await requireTenant();
-  const members = listMembers(tenant.business.id);
-  const invitations = listInvitations(tenant.business.id);
-  const db = getDb();
+  const members = await listMembers(tenant.business.id);
+  const invitations = await listInvitations(tenant.business.id);
+  const count = async (sql: string) =>
+    num((await one<{ c: string }>(sql, [tenant.business.id]))?.c);
   const usage = {
-    customers: (db.prepare("SELECT COUNT(*) c FROM customers WHERE business_id = ?").get(tenant.business.id) as { c: number }).c,
-    forms: (db.prepare("SELECT COUNT(*) c FROM forms WHERE business_id = ? AND is_template = 0").get(tenant.business.id) as { c: number }).c,
-    submissions: (db.prepare("SELECT COUNT(*) c FROM submissions WHERE business_id = ?").get(tenant.business.id) as { c: number }).c,
+    customers: await count("SELECT COUNT(*) AS c FROM customers WHERE business_id = $1"),
+    forms: await count("SELECT COUNT(*) AS c FROM forms WHERE business_id = $1 AND is_template = FALSE"),
+    submissions: await count("SELECT COUNT(*) AS c FROM submissions WHERE business_id = $1"),
   };
 
   return (

@@ -1,7 +1,7 @@
 import "server-only";
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import { getDb, nowIso, uid } from "./db";
+import { nowIso, one, rows, run, uid } from "./db";
 import { log } from "./log";
 import type { Business, Role } from "@/lib/types";
 
@@ -40,26 +40,31 @@ export function verifyPassword(password: string, stored: string): boolean {
 
 /* ————— Usuarios ————— */
 
-export function createUser(email: string, name: string, password: string): SessionUser {
-  const db = getDb();
+export async function createUser(
+  email: string,
+  name: string,
+  password: string,
+): Promise<SessionUser> {
   const id = uid();
-  db.prepare(
-    "INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-  ).run(id, email.trim().toLowerCase(), name.trim(), hashPassword(password), nowIso());
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+  await run(
+    "INSERT INTO users (id, email, name, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)",
+    [id, cleanEmail, cleanName, hashPassword(password), nowIso()],
+  );
   log.info("user.created", { userId: id });
-  return { id, email: email.trim().toLowerCase(), name: name.trim() };
+  return { id, email: cleanEmail, name: cleanName };
 }
 
-export function findUserByEmail(email: string) {
-  return getDb()
-    .prepare("SELECT id, email, name, password_hash FROM users WHERE email = ?")
-    .get(email.trim().toLowerCase()) as
-    | { id: string; email: string; name: string; password_hash: string }
-    | undefined;
+export async function findUserByEmail(email: string) {
+  return one<{ id: string; email: string; name: string; password_hash: string }>(
+    "SELECT id, email, name, password_hash FROM users WHERE email = $1",
+    [email.trim().toLowerCase()],
+  );
 }
 
-export function authenticate(email: string, password: string): SessionUser | null {
-  const row = findUserByEmail(email);
+export async function authenticate(email: string, password: string): Promise<SessionUser | null> {
+  const row = await findUserByEmail(email);
   if (!row) return null;
   if (!verifyPassword(password, row.password_hash)) return null;
   return { id: row.id, email: row.email, name: row.name };
@@ -71,34 +76,31 @@ function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export function createSession(userId: string): { token: string; expiresAt: string } {
+export async function createSession(userId: string): Promise<{ token: string; expiresAt: string }> {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400000).toISOString();
-  getDb()
-    .prepare("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)")
-    .run(hashToken(token), userId, expiresAt, nowIso());
+  await run(
+    "INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES ($1, $2, $3, $4)",
+    [hashToken(token), userId, expiresAt, nowIso()],
+  );
   return { token, expiresAt };
 }
 
-export function destroySession(token: string) {
-  getDb().prepare("DELETE FROM sessions WHERE id = ?").run(hashToken(token));
+export async function destroySession(token: string) {
+  await run("DELETE FROM sessions WHERE id = $1", [hashToken(token)]);
 }
 
-export function getUserByToken(token: string | undefined): SessionUser | null {
+export async function getUserByToken(token: string | undefined): Promise<SessionUser | null> {
   if (!token) return null;
-  const db = getDb();
-  const row = db
-    .prepare(
-      `SELECT u.id, u.email, u.name, s.expires_at
-       FROM sessions s JOIN users u ON u.id = s.user_id
-       WHERE s.id = ?`,
-    )
-    .get(hashToken(token)) as
-    | { id: string; email: string; name: string; expires_at: string }
-    | undefined;
+  const row = await one<{ id: string; email: string; name: string; expires_at: string }>(
+    `SELECT u.id, u.email, u.name, s.expires_at
+     FROM sessions s JOIN users u ON u.id = s.user_id
+     WHERE s.id = $1`,
+    [hashToken(token)],
+  );
   if (!row) return null;
   if (row.expires_at < nowIso()) {
-    db.prepare("DELETE FROM sessions WHERE id = ?").run(hashToken(token));
+    await run("DELETE FROM sessions WHERE id = $1", [hashToken(token)]);
     return null;
   }
   return { id: row.id, email: row.email, name: row.name };
@@ -134,33 +136,25 @@ function rowToBusiness(row: Record<string, unknown>): Business {
 export async function getTenant(): Promise<Tenant | null> {
   const user = await getCurrentUser();
   if (!user) return null;
-  const db = getDb();
-  // node:sqlite devuelve filas con prototipo null: copiar a objetos planos
-  // para que puedan cruzar el límite Server → Client Component.
-  const memberships = (
-    db
-      .prepare(
-        `SELECT m.business_id, m.role, b.name AS business_name
-         FROM memberships m JOIN businesses b ON b.id = m.business_id
-         WHERE m.user_id = ? ORDER BY m.created_at ASC`,
-      )
-      .all(user.id) as { business_id: string; role: Role; business_name: string }[]
-  ).map((r) => ({ ...r }));
+
+  const memberships = await rows<{ business_id: string; role: Role; business_name: string }>(
+    `SELECT m.business_id, m.role, b.name AS business_name
+     FROM memberships m JOIN businesses b ON b.id = m.business_id
+     WHERE m.user_id = $1 ORDER BY m.created_at ASC`,
+    [user.id],
+  );
   if (memberships.length === 0) return null;
 
   const store = await cookies();
   const wanted = store.get(BIZ_COOKIE)?.value;
-  const active =
-    memberships.find((m) => m.business_id === wanted) ?? memberships[0]!;
-  const bizRow = db
-    .prepare("SELECT * FROM businesses WHERE id = ?")
-    .get(active.business_id) as Record<string, unknown> | undefined;
+  const active = memberships.find((m) => m.business_id === wanted) ?? memberships[0]!;
+  const bizRow = await one("SELECT * FROM businesses WHERE id = $1", [active.business_id]);
   if (!bizRow) return null;
 
   return {
     user,
     business: rowToBusiness(bizRow),
     role: active.role,
-    memberships,
+    memberships: memberships.map((m) => ({ ...m })),
   };
 }

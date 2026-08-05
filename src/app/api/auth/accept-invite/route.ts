@@ -20,7 +20,7 @@ const schema = z.object({
 
 export const POST = withPublic(async (req) => {
   const { token, name, password } = await parseBody(req, schema);
-  const invitation = getInvitationByToken(token);
+  const invitation = await getInvitationByToken(token);
   if (!invitation) {
     return NextResponse.json({ error: "La invitación no existe o ya fue usada" }, { status: 404 });
   }
@@ -30,7 +30,7 @@ export const POST = withPublic(async (req) => {
 
   if (!user) {
     // Sin sesión: usar cuenta existente del email invitado o crear una nueva
-    const existing = findUserByEmail(invitation.email);
+    const existing = await findUserByEmail(invitation.email);
     if (existing) {
       return NextResponse.json(
         { error: "Ya existe una cuenta con ese email. Iniciá sesión y volvé a abrir el enlace." },
@@ -40,8 +40,8 @@ export const POST = withPublic(async (req) => {
     if (!name || !password) {
       return NextResponse.json({ error: "Completá tu nombre y una contraseña" }, { status: 400 });
     }
-    user = createUser(invitation.email, name, password);
-    const { token: sessionToken, expiresAt } = createSession(user.id);
+    user = await createUser(invitation.email, name, password);
+    const { token: sessionToken, expiresAt } = await createSession(user.id);
     store.set(SESSION_COOKIE, sessionToken, {
       httpOnly: true,
       sameSite: "lax",
@@ -51,7 +51,7 @@ export const POST = withPublic(async (req) => {
     });
   }
 
-  const businessId = acceptInvitation(token, user.id);
+  const businessId = await acceptInvitation(token, user.id);
   store.set(BIZ_COOKIE, businessId, { httpOnly: true, sameSite: "lax", path: "/" });
   return NextResponse.json({ ok: true });
 });

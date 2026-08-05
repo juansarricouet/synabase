@@ -1,5 +1,5 @@
 import "server-only";
-import { getDb, monthKey, monthKeyNow, parseJson } from "../db";
+import { monthKey, monthKeyNow, num, parseJson, rows } from "../db";
 import { getCustomerFacts } from "./customers";
 import type { DashboardStats, SubmissionRow } from "@/lib/types";
 import { listSubmissions } from "./submissions";
@@ -20,14 +20,14 @@ function splitProducts(product: string | null): string[] {
     .map((s) => (s[0]?.toUpperCase() ?? "") + s.slice(1));
 }
 
-export function getDashboardStats(businessId: string): DashboardStats {
-  const db = getDb();
+export async function getDashboardStats(businessId: string): Promise<DashboardStats> {
   const thisMonth = monthKeyNow(0);
   const prevMonth = monthKeyNow(-1);
 
-  const customers = db
-    .prepare("SELECT id, first_visit_at, visits FROM customers WHERE business_id = ?")
-    .all(businessId) as { id: string; first_visit_at: string; visits: number }[];
+  const customers = await rows<{ id: string; first_visit_at: string; visits: number }>(
+    "SELECT id, first_visit_at, visits FROM customers WHERE business_id = $1",
+    [businessId],
+  );
 
   const totalCustomers = customers.length;
   let newThisMonth = 0;
@@ -39,14 +39,23 @@ export function getDashboardStats(businessId: string): DashboardStats {
     firstVisitMonth.set(c.id, mk);
     if (mk === thisMonth) newThisMonth++;
     if (mk === prevMonth) newPrevMonth++;
-    if (c.visits >= 2) recurrent++;
+    if (Number(c.visits) >= 2) recurrent++;
   }
 
-  const submissions = db
-    .prepare("SELECT customer_id, product, hour, created_at FROM submissions WHERE business_id = ?")
-    .all(businessId) as { customer_id: string | null; product: string | null; hour: number | null; created_at: string }[];
+  const submissions = await rows<{
+    customer_id: string | null;
+    product: string | null;
+    hour: number | null;
+    created_at: string;
+  }>("SELECT customer_id, product, hour, created_at FROM submissions WHERE business_id = $1", [
+    businessId,
+  ]);
 
-  const totalScans = (db.prepare("SELECT COUNT(*) AS c FROM scans WHERE business_id = ?").get(businessId) as { c: number }).c;
+  const scanRow = await rows<{ c: string }>(
+    "SELECT COUNT(*) AS c FROM scans WHERE business_id = $1",
+    [businessId],
+  );
+  const totalScans = num(scanRow[0]?.c);
 
   // Serie mensual: nuevos vs recurrentes
   const months = lastNMonthKeys(12);
@@ -56,13 +65,15 @@ export function getDashboardStats(businessId: string): DashboardStats {
   for (const [, mk] of firstVisitMonth) {
     if (monthSet.has(mk)) newByMonth.set(mk, (newByMonth.get(mk) ?? 0) + 1);
   }
+
   let submissionsThisMonth = 0;
   const hourCounts = new Array<number>(24).fill(0);
   const productCounts = new Map<string, number>();
   for (const s of submissions) {
     const mk = monthKey(s.created_at);
     if (mk === thisMonth) submissionsThisMonth++;
-    if (s.hour != null && s.hour >= 0 && s.hour < 24) hourCounts[s.hour]!++;
+    const hour = s.hour == null ? null : Number(s.hour);
+    if (hour != null && hour >= 0 && hour < 24) hourCounts[hour]!++;
     for (const p of splitProducts(s.product)) productCounts.set(p, (productCounts.get(p) ?? 0) + 1);
     if (s.customer_id && monthSet.has(mk) && firstVisitMonth.get(s.customer_id) !== mk) {
       const set = recurrentByMonth.get(mk) ?? new Set<string>();
@@ -79,14 +90,15 @@ export function getDashboardStats(businessId: string): DashboardStats {
     { bucket: "Más de 10", count: 0 },
   ];
   for (const c of customers) {
-    if (c.visits <= 1) frequencyBuckets[0]!.count++;
-    else if (c.visits <= 3) frequencyBuckets[1]!.count++;
-    else if (c.visits <= 6) frequencyBuckets[2]!.count++;
-    else if (c.visits <= 10) frequencyBuckets[3]!.count++;
+    const v = Number(c.visits);
+    if (v <= 1) frequencyBuckets[0]!.count++;
+    else if (v <= 3) frequencyBuckets[1]!.count++;
+    else if (v <= 6) frequencyBuckets[2]!.count++;
+    else if (v <= 10) frequencyBuckets[3]!.count++;
     else frequencyBuckets[4]!.count++;
   }
 
-  const recent = listSubmissions(businessId, { limit: 8 }).rows;
+  const recent = (await listSubmissions(businessId, { limit: 8 })).rows;
 
   return {
     total_customers: totalCustomers,
@@ -137,7 +149,14 @@ export interface AnalyticsData {
   age_histogram: { bucket: string; count: number }[];
   weekday_distribution: { day: string; count: number }[];
   monthly_movement: { month: string; nuevos: number; recuperados: number; perdidos: number }[];
-  top_customers: { id: string; name: string; visits: number; favorite: string | null; last_visit: string; spent: number }[];
+  top_customers: {
+    id: string;
+    name: string;
+    visits: number;
+    favorite: string | null;
+    last_visit: string;
+    spent: number;
+  }[];
   top_products: { name: string; count: number }[];
   question_ranking: { label: string; responses: number; form_name: string }[];
   question_breakdowns: QuestionBreakdown[];
@@ -145,9 +164,8 @@ export interface AnalyticsData {
 
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-export function getAnalytics(businessId: string): AnalyticsData {
-  const db = getDb();
-  const facts = getCustomerFacts(businessId);
+export async function getAnalytics(businessId: string): Promise<AnalyticsData> {
+  const facts = await getCustomerFacts(businessId);
   const now = Date.now();
   const thisMonth = monthKeyNow(0);
 
@@ -179,11 +197,16 @@ export function getAnalytics(businessId: string): AnalyticsData {
   }
 
   // Movimiento mensual: nuevos / recuperados / perdidos
-  const subs = db
-    .prepare(
-      "SELECT customer_id, created_at, weekday, amount FROM submissions WHERE business_id = ? AND customer_id IS NOT NULL ORDER BY created_at ASC",
-    )
-    .all(businessId) as { customer_id: string; created_at: string; weekday: number | null; amount: number | null }[];
+  const subs = await rows<{
+    customer_id: string;
+    created_at: string;
+    weekday: number | null;
+    amount: string | number | null;
+  }>(
+    `SELECT customer_id, created_at, weekday, amount FROM submissions
+     WHERE business_id = $1 AND customer_id IS NOT NULL ORDER BY created_at ASC`,
+    [businessId],
+  );
 
   const weekdayCounts = new Array<number>(7).fill(0);
   let revenue = 0;
@@ -191,8 +214,9 @@ export function getAnalytics(businessId: string): AnalyticsData {
   const recoveredByMonth = new Map<string, number>();
   let recoveredThisMonth = 0;
   for (const s of subs) {
-    if (s.weekday != null && s.weekday >= 0 && s.weekday < 7) weekdayCounts[s.weekday]!++;
-    revenue += s.amount ?? 0;
+    const wd = s.weekday == null ? null : Number(s.weekday);
+    if (wd != null && wd >= 0 && wd < 7) weekdayCounts[wd]!++;
+    revenue += num(s.amount);
     const t = new Date(s.created_at).getTime();
     const prev = lastSeenByCustomer.get(s.customer_id);
     if (prev !== undefined && t - prev > 30 * 86400000) {
@@ -217,33 +241,42 @@ export function getAnalytics(businessId: string): AnalyticsData {
   }
 
   // Preguntas: ranking y desglose
-  const questions = db
-    .prepare(
-      `SELECT q.id, q.label, q.type, q.options_json, q.scale_max, q.maps_to, f.name AS form_name,
-              (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS responses
-       FROM questions q JOIN forms f ON f.id = q.form_id
-       WHERE f.business_id = ? AND f.is_template = 0
-       ORDER BY responses DESC`,
-    )
-    .all(businessId) as {
-    id: string; label: string; type: string; options_json: string; scale_max: number | null;
-    maps_to: string | null; form_name: string; responses: number;
-  }[];
+  const questions = await rows<{
+    id: string;
+    label: string;
+    type: string;
+    options_json: string;
+    scale_max: number | null;
+    maps_to: string | null;
+    form_name: string;
+    responses: string;
+  }>(
+    `SELECT q.id, q.label, q.type, q.options_json, q.scale_max, q.maps_to, f.name AS form_name,
+            (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.id) AS responses
+     FROM questions q JOIN forms f ON f.id = q.form_id
+     WHERE f.business_id = $1 AND f.is_template = FALSE
+     ORDER BY responses DESC`,
+    [businessId],
+  );
 
   const breakdowns: QuestionBreakdown[] = [];
   for (const q of questions) {
+    const responses = num(q.responses);
     if (["name", "phone", "email"].includes(q.maps_to ?? "")) continue;
-    if (q.responses === 0) continue;
-    const values = (
-      db.prepare("SELECT value_json FROM answers WHERE question_id = ?").all(q.id) as { value_json: string | null }[]
-    ).map((r) => parseJson<unknown>(r.value_json, null));
+    if (responses === 0) continue;
+
+    const valueRows = await rows<{ value_json: string | null }>(
+      "SELECT value_json FROM answers WHERE question_id = $1",
+      [q.id],
+    );
+    const values = valueRows.map((r) => parseJson<unknown>(r.value_json, null));
 
     const breakdown: QuestionBreakdown = {
       question_id: q.id,
       form_name: q.form_name,
       label: q.label,
       type: q.type,
-      responses: q.responses,
+      responses,
     };
     if (["select", "multiselect", "boolean"].includes(q.type)) {
       const counts = new Map<string, number>();
@@ -260,7 +293,9 @@ export function getAnalytics(businessId: string): AnalyticsData {
         .map(([label, count]) => ({ label, count }));
     } else if (["scale", "number"].includes(q.type)) {
       const nums = values.map(Number).filter((n) => Number.isFinite(n));
-      if (nums.length > 0) breakdown.average = Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+      if (nums.length > 0) {
+        breakdown.average = Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
+      }
       if (q.type === "scale") {
         const max = q.scale_max ?? 10;
         const counts = new Map<number, number>();
@@ -280,9 +315,11 @@ export function getAnalytics(businessId: string): AnalyticsData {
   }
 
   const productCounts = new Map<string, number>();
-  for (const s of db
-    .prepare("SELECT product FROM submissions WHERE business_id = ? AND product IS NOT NULL")
-    .all(businessId) as { product: string }[]) {
+  const productRows = await rows<{ product: string }>(
+    "SELECT product FROM submissions WHERE business_id = $1 AND product IS NOT NULL",
+    [businessId],
+  );
+  for (const s of productRows) {
     for (const p of splitProducts(s.product)) productCounts.set(p, (productCounts.get(p) ?? 0) + 1);
   }
 
@@ -291,7 +328,9 @@ export function getAnalytics(businessId: string): AnalyticsData {
     lost_customers: lost,
     recovered_this_month: recoveredThisMonth,
     avg_days_between_visits:
-      gapDaysList.length > 0 ? Math.round(gapDaysList.reduce((a, b) => a + b, 0) / gapDaysList.length) : null,
+      gapDaysList.length > 0
+        ? Math.round(gapDaysList.reduce((a, b) => a + b, 0) / gapDaysList.length)
+        : null,
     avg_age: ages.length > 0 ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : null,
     total_revenue_tracked: Math.round(revenue),
     gender_distribution: [...genderCounts.entries()]
@@ -324,7 +363,7 @@ export function getAnalytics(businessId: string): AnalyticsData {
     question_ranking: questions
       .filter((q) => !["name", "phone", "email"].includes(q.maps_to ?? ""))
       .slice(0, 10)
-      .map((q) => ({ label: q.label, responses: q.responses, form_name: q.form_name })),
+      .map((q) => ({ label: q.label, responses: num(q.responses), form_name: q.form_name })),
     question_breakdowns: breakdowns,
   };
 }

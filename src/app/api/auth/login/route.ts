@@ -12,12 +12,12 @@ const schema = z.object({
 
 export const POST = withPublic(async (req) => {
   const data = await parseBody(req, schema);
-  const user = authenticate(data.email, data.password);
+  const user = await authenticate(data.email, data.password);
   if (!user) {
     log.warn("auth.login_failed", {});
     return NextResponse.json({ error: "Email o contraseña incorrectos" }, { status: 401 });
   }
-  const { token, expiresAt } = createSession(user.id);
+  const { token, expiresAt } = await createSession(user.id);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,

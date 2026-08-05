@@ -4,7 +4,7 @@ import { parseBody, withTenant } from "@/server/http";
 import { createTag, listTags } from "@/server/services/customers";
 
 export const GET = withTenant(async (tenant) => {
-  return NextResponse.json({ tags: listTags(tenant.business.id) });
+  return NextResponse.json({ tags: await listTags(tenant.business.id) });
 });
 
 const schema = z.object({
@@ -14,6 +14,6 @@ const schema = z.object({
 
 export const POST = withTenant(async (tenant, req) => {
   const { name, color } = await parseBody(req, schema);
-  const tag = createTag(tenant.business.id, name, color);
+  const tag = await createTag(tenant.business.id, name, color);
   return NextResponse.json({ tag });
 });

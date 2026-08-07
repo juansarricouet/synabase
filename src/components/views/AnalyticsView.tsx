@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarRange, HeartPulse, RotateCcw, UserMinus, Users, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { AnimatedNumber, type NumberFormat } from "@/components/ui/AnimatedNumber";
 import { Avatar } from "@/components/ui/misc";
 import { ChartCard, DonutChart, GroupedBarsChart, OptionBars, VBarChart } from "@/components/charts";
 import { CHART_COLORS, formatMoney, formatNumber, timeAgo } from "@/lib/utils";
@@ -24,21 +25,26 @@ export function AnalyticsView({
       />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 xl:grid-cols-6">
-        <Kpi icon={<HeartPulse className="size-4" />} label="Activos (30 días)" value={formatNumber(a.active_30d)} />
-        <Kpi icon={<UserMinus className="size-4" />} label="Perdidos (30+ días)" value={formatNumber(a.lost_customers)} warn />
-        <Kpi icon={<RotateCcw className="size-4" />} label="Recuperados este mes" value={formatNumber(a.recovered_this_month)} good />
+      <div className="stagger grid grid-cols-2 gap-3.5 sm:grid-cols-3 xl:grid-cols-6">
+        <Kpi icon={<HeartPulse className="size-4" />} label="Activos (30 días)" count={a.active_30d} />
+        <Kpi icon={<UserMinus className="size-4" />} label="Perdidos (30+ días)" count={a.lost_customers} warn />
+        <Kpi icon={<RotateCcw className="size-4" />} label="Recuperados este mes" count={a.recovered_this_month} good />
         <Kpi
           icon={<CalendarRange className="size-4" />}
           label="Entre visitas"
           value={a.avg_days_between_visits != null ? `${a.avg_days_between_visits} días` : "—"}
         />
         <Kpi icon={<Users className="size-4" />} label="Edad promedio" value={a.avg_age != null ? `${a.avg_age} años` : "—"} />
-        <Kpi
-          icon={<Wallet className="size-4" />}
-          label="Consumo registrado"
-          value={a.total_revenue_tracked > 0 ? formatMoney(a.total_revenue_tracked) : "—"}
-        />
+        {a.total_revenue_tracked > 0 ? (
+          <Kpi
+            icon={<Wallet className="size-4" />}
+            label="Consumo registrado"
+            count={a.total_revenue_tracked}
+            format="money"
+          />
+        ) : (
+          <Kpi icon={<Wallet className="size-4" />} label="Consumo registrado" value="—" />
+        )}
       </div>
 
       {/* Movimiento + género */}
@@ -194,17 +200,23 @@ function Kpi({
   icon,
   label,
   value,
+  count,
+  format = "number",
   good,
   warn,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  /** Texto ya armado, para los valores con unidad ("12 días") o vacíos ("—"). */
+  value?: string;
+  /** Número crudo: si viene, la tarjeta lo cuenta desde cero al aparecer. */
+  count?: number;
+  format?: NumberFormat;
   good?: boolean;
   warn?: boolean;
 }) {
   return (
-    <div className="card card-hover p-4">
+    <div className="card lift p-4">
       <span
         className={`flex size-7.5 items-center justify-center rounded-lg ${
           good ? "bg-success-100 text-success-600" : warn ? "bg-warning-100 text-warning-600" : "bg-brand-50 text-brand-600"
@@ -212,7 +224,17 @@ function Kpi({
       >
         {icon}
       </span>
-      <p className="tabular mt-2.5 truncate text-[19px] font-semibold leading-none tracking-tight text-ink-950">{value}</p>
+      {count != null ? (
+        <AnimatedNumber
+          value={count}
+          format={format}
+          className="tabular font-display mt-2.5 block truncate text-[20px] font-extrabold leading-none tracking-[-0.03em] text-ink-950"
+        />
+      ) : (
+        <p className="tabular font-display mt-2.5 truncate text-[20px] font-extrabold leading-none tracking-[-0.03em] text-ink-950">
+          {value}
+        </p>
+      )}
       <p className="mt-1.5 text-[11.5px] font-medium text-ink-500">{label}</p>
     </div>
   );

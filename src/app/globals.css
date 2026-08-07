@@ -128,6 +128,37 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
   }
+  /* Barrido de brillo, para botones y tarjetas destacadas */
+  @keyframes sheen {
+    from { transform: translateX(-120%) skewX(-18deg); }
+    to { transform: translateX(320%) skewX(-18deg); }
+  }
+  /* Halo que late, para marcar lo que está "vivo" */
+  @keyframes ring-pulse {
+    0% { box-shadow: 0 0 0 0 rgb(199 52 24 / 0.35); }
+    70% { box-shadow: 0 0 0 10px rgb(199 52 24 / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(199 52 24 / 0); }
+  }
+  /* Flote suave, para las maquetas del hero */
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  /* Cinta que corre en loop */
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  /* Titular que sube desde su máscara */
+  @keyframes line-rise {
+    from { transform: translateY(105%); }
+    to { transform: translateY(0); }
+  }
+  /* Trazo circular que se dibuja */
+  @keyframes draw-ring {
+    from { stroke-dashoffset: var(--ring, 320); }
+    to { stroke-dashoffset: 0; }
+  }
 }
 
 /* ————— Base ————— */
@@ -363,12 +394,143 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .caret { animation: caret 1.1s steps(1) infinite; }
 
+/* ————— Animaciones compartidas (landing y panel) ————— */
+
+/*
+ * Entrada escalonada: basta con poner `.stagger` en el contenedor y cada hijo
+ * entra un poco después que el anterior. Si hace falta un orden distinto al de
+ * la grilla, se puede forzar con `--i` en el hijo.
+ */
+.stagger > * {
+  animation: fade-up 0.6s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 65ms);
+}
+.stagger > *:nth-child(1) { --i: 0; }
+.stagger > *:nth-child(2) { --i: 1; }
+.stagger > *:nth-child(3) { --i: 2; }
+.stagger > *:nth-child(4) { --i: 3; }
+.stagger > *:nth-child(5) { --i: 4; }
+.stagger > *:nth-child(6) { --i: 5; }
+.stagger > *:nth-child(7) { --i: 6; }
+.stagger > *:nth-child(8) { --i: 7; }
+.stagger > *:nth-child(n + 9) { --i: 8; }
+
+/* Relieve al pasar el mouse, con un poco más de vida que .card-hover */
+.lift {
+  transition:
+    transform 0.28s var(--ease-out-expo),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-pop);
+}
+
+/* Barrido de brillo al pasar el mouse (el padre necesita position + overflow) */
+.sheen { position: relative; overflow: hidden; isolation: isolate; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  pointer-events: none;
+}
+.sheen:hover::after { animation: sheen 0.85s ease-out; }
+
+/* Punto que late: marca lo que está pasando ahora */
+.live-dot { animation: ring-pulse 2.2s ease-out infinite; }
+
+/* Flote continuo de las maquetas */
+.floaty { animation: float-y 7s ease-in-out infinite; }
+
+/*
+ * Titular por líneas: cada línea va dentro de un `.line-mask` y sube desde
+ * abajo. La máscara recorta el desborde para que parezca que aparece.
+ */
+.line-mask { display: block; overflow: hidden; }
+.line-mask > span {
+  display: block;
+  transform: translateY(105%);
+}
+.rv.in .line-mask > span,
+.line-mask.in > span {
+  animation: line-rise 0.85s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* Cinta infinita: el contenido va duplicado y se desplaza media pasada */
+.marquee { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.marquee > div {
+  display: flex;
+  width: max-content;
+  animation: marquee 38s linear infinite;
+}
+.marquee:hover > div { animation-play-state: paused; }
+
+/* Barra de progreso de lectura, arriba de todo */
+.scroll-progress {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 60;
+  width: 100%;
+  height: 2px;
+  background: var(--color-coral);
+  transform-origin: 0 50%;
+  transform: scaleX(var(--p, 0));
+  transition: transform 0.08s linear;
+}
+
+/* Encabezado de la landing: se achica y toma sombra al despegarse del inicio */
+.landing-header {
+  transition:
+    height 0.3s var(--ease-out-expo),
+    box-shadow 0.3s ease,
+    background-color 0.3s ease;
+}
+.landing-header .header-inner {
+  height: 70px;
+  transition: height 0.3s var(--ease-out-expo);
+}
+.landing-header.is-stuck {
+  box-shadow: 0 1px 20px -8px rgb(17 17 17 / 0.22);
+}
+.landing-header.is-stuck .header-inner {
+  height: 58px;
+}
+
+/* Acordeón que se abre con altura animada, sin JavaScript */
+.acc-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.42s var(--ease-out-expo);
+}
+.acc-body > div { overflow: hidden; }
+details[open] .acc-body { grid-template-rows: 1fr; }
+
+/* Anillo que se dibuja alrededor del QR de la maqueta */
+.mock .draw-ring { stroke-dasharray: var(--ring, 320); stroke-dashoffset: var(--ring, 320); }
+.mock.in .draw-ring { animation: draw-ring 1.6s var(--ease-out-expo) forwards; }
+
 @media (prefers-reduced-motion: reduce) {
   .rv { opacity: 1; transform: none; transition: none; }
   .mock.in .mock-node,
   .mock.in .mock-line,
   .mock.in .mock-bar,
+  .mock.in .draw-ring,
+  .stagger > *,
+  .live-dot,
+  .floaty,
+  .marquee > div,
+  .sheen:hover::after,
   .caret { animation: none; }
   .mock .mock-line { stroke-dashoffset: 0; }
+  .mock .draw-ring { stroke-dashoffset: 0; }
   .mock .mock-bar { width: var(--w, 60%); }
+  .lift:hover { transform: none; }
+  .line-mask > span { transform: none; }
+  .acc-body { transition: none; }
+  .scroll-progress { display: none; }
 }

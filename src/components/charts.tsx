@@ -17,6 +17,22 @@ import {
 } from "recharts";
 import { CHART_COLORS, RANKING_COLORS, cn, formatMonthKey, formatNumber } from "@/lib/utils";
 
+/**
+ * Animación de entrada de las series.
+ *
+ * Recharts la corre una sola vez al montar. `easeOut` frena sobre el final,
+ * que es como se mueve el resto del panel. Si el usuario pidió menos
+ * movimiento en el sistema, se apaga.
+ */
+const PREFERS_REDUCED =
+  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const ANIM = {
+  isAnimationActive: !PREFERS_REDUCED,
+  animationDuration: 900,
+  animationEasing: "ease-out",
+} as const;
+
 /* ————— Card contenedora ————— */
 
 export function ChartCard({
@@ -117,8 +133,8 @@ export function MonthlyCustomersChart({
         <XAxis dataKey="month" {...AXIS} tickFormatter={formatMonthKey} dy={6} interval="preserveStartEnd" />
         <YAxis {...AXIS} allowDecimals={false} />
         <Tooltip content={<SbTooltip labelFormatter={(l) => formatMonthKey(String(l))} />} cursor={{ stroke: "#d6d6dd" }} />
-        <Area type="monotone" dataKey="nuevos" name="Nuevos" stroke={CHART_COLORS[0]} strokeWidth={2.2} fill="url(#gNuevos)" dot={false} activeDot={{ r: 4 }} />
-        <Area type="monotone" dataKey="recurrentes" name="Recurrentes" stroke={CHART_COLORS[2]} strokeWidth={2.2} fill="url(#gRec)" dot={false} activeDot={{ r: 4 }} />
+        <Area type="monotone" dataKey="nuevos" name="Nuevos" stroke={CHART_COLORS[0]} strokeWidth={2.2} fill="url(#gNuevos)" dot={false} activeDot={{ r: 4 }} {...ANIM} />
+        <Area type="monotone" dataKey="recurrentes" name="Recurrentes" stroke={CHART_COLORS[2]} strokeWidth={2.2} fill="url(#gRec)" dot={false} activeDot={{ r: 4 }} {...ANIM} animationBegin={180} />
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12, color: "#6f6f7a" }} />
       </AreaChart>
     </ResponsiveContainer>
@@ -140,7 +156,7 @@ export function TopProductsChart({ data, height = 240 }: { data: { name: string;
           tick={{ fontSize: 12, fill: "#565661" }}
         />
         <Tooltip content={<SbTooltip />} cursor={{ fill: "#f5f5f7" }} />
-        <Bar dataKey="count" name="Veces pedido" radius={[0, 6, 6, 0]} maxBarSize={18}>
+        <Bar dataKey="count" name="Veces pedido" radius={[0, 6, 6, 0]} maxBarSize={18} {...ANIM}>
           {data.map((_, i) => (
             <Cell key={i} fill={i === 0 ? CHART_COLORS[0] : "#ffcec3"} />
           ))}
@@ -185,7 +201,7 @@ export function VBarChart({
         <XAxis dataKey={xKey} {...AXIS} dy={6} tickFormatter={tickFormatter} interval="preserveStartEnd" />
         <YAxis {...AXIS} allowDecimals={false} />
         <Tooltip content={<SbTooltip labelFormatter={tickFormatter} />} cursor={{ fill: "#f5f5f7" }} />
-        <Bar dataKey={yKey} name={name} fill={color} radius={[5, 5, 0, 0]} maxBarSize={26} />
+        <Bar dataKey={yKey} name={name} fill={color} radius={[5, 5, 0, 0]} maxBarSize={26} {...ANIM} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -214,8 +230,8 @@ export function GroupedBarsChart({
         <XAxis dataKey={xKey} {...AXIS} dy={6} tickFormatter={xFormatter} />
         <YAxis {...AXIS} allowDecimals={false} />
         <Tooltip content={<SbTooltip labelFormatter={xFormatter} />} cursor={{ fill: "#f5f5f7" }} />
-        {series.map((s) => (
-          <Bar key={s.key} dataKey={s.key} name={s.name} fill={s.color} radius={[5, 5, 0, 0]} maxBarSize={18} />
+        {series.map((s, i) => (
+          <Bar key={s.key} dataKey={s.key} name={s.name} fill={s.color} radius={[5, 5, 0, 0]} maxBarSize={18} {...ANIM} animationBegin={i * 140} />
         ))}
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12, color: "#6f6f7a" }} />
       </BarChart>

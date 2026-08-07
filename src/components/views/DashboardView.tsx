@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/misc";
 import { Badge } from "@/components/ui/Badge";
 import { ChartCard, GroupedBarsChart, MonthlyCustomersChart, TopProductsChart, VBarChart } from "@/components/charts";
 import { CHART_COLORS, formatNumber, formatPercent, timeAgo } from "@/lib/utils";
+import { AnimatedNumber, type NumberFormat } from "@/components/ui/AnimatedNumber";
 import type { DashboardStats, Form } from "@/lib/types";
 
 /** Panel principal, compartido por /app y por la demo pública /demo. */
@@ -49,30 +50,31 @@ export function DashboardView({
       ) : (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
+          <div className="stagger grid grid-cols-2 gap-3.5 xl:grid-cols-4">
             <StatCard
               icon={<Users className="size-4" />}
               label="Clientes registrados"
-              value={formatNumber(stats.total_customers)}
+              value={stats.total_customers}
               sub={`${formatNumber(stats.recurrent_customers)} recurrentes`}
             />
             <StatCard
               icon={<UserPlus className="size-4" />}
               label="Nuevos este mes"
-              value={formatNumber(stats.new_this_month)}
+              value={stats.new_this_month}
               delta={delta}
               sub={`${formatNumber(stats.new_prev_month)} el mes pasado`}
             />
             <StatCard
               icon={<Repeat className="size-4" />}
               label="Tasa de retorno"
-              value={formatPercent(stats.return_rate)}
+              value={stats.return_rate}
+              format="percent"
               sub="clientes que volvieron"
             />
             <StatCard
               icon={<ScanLine className="size-4" />}
               label="Escaneos del QR"
-              value={formatNumber(stats.total_scans)}
+              value={stats.total_scans}
               sub={`${formatPercent(stats.conversion_rate)} completó el formulario`}
             />
           </div>
@@ -87,9 +89,12 @@ export function DashboardView({
               <MonthlyCustomersChart data={stats.customers_by_month} height={252} />
             </ChartCard>
 
-            <section className="card card-hover flex flex-col p-5">
+            <section className="card lift flex flex-col p-5">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-[14px] font-semibold tracking-tight text-ink-950">Últimos registros</h3>
+                <h3 className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-ink-950">
+                  <span className="live-dot size-1.5 rounded-full bg-brand-600" />
+                  Últimos registros
+                </h3>
                 <Link
                   href={`${basePath}/base`}
                   className="flex items-center gap-1 text-xs font-medium text-brand-700 transition-colors hover:text-brand-600"
@@ -180,17 +185,20 @@ function StatCard({
   icon,
   label,
   value,
+  format = "number",
   sub,
   delta,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  /** Número crudo: la tarjeta se encarga de animarlo y de darle formato. */
+  value: number;
+  format?: NumberFormat;
   sub?: string;
   delta?: number | null;
 }) {
   return (
-    <div className="card card-hover p-4.5">
+    <div className="card lift p-4.5">
       <div className="flex items-center justify-between">
         <span className="flex size-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">{icon}</span>
         {delta != null && (
@@ -201,9 +209,11 @@ function StatCard({
           </Badge>
         )}
       </div>
-      <p className="tabular font-display mt-3 text-[25px] font-extrabold leading-none tracking-[-0.03em] text-ink-950">
-        {value}
-      </p>
+      <AnimatedNumber
+        value={value}
+        format={format}
+        className="tabular font-display mt-3 block text-[25px] font-extrabold leading-none tracking-[-0.03em] text-ink-950"
+      />
       <p className="mt-1.5 text-[12.5px] font-medium text-ink-500">{label}</p>
       {sub && <p className="mt-0.5 text-[11.5px] text-ink-400">{sub}</p>}
     </div>

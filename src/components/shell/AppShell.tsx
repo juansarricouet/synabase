@@ -132,14 +132,24 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
               href={item.href}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                "group flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13.5px] font-medium transition-all duration-150",
+                "group relative flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13.5px] font-medium transition-all duration-200",
                 active
                   ? "bg-white text-ink-950 shadow-[0_1px_3px_rgb(23_23_28/0.07),0_0_0_1px_rgb(23_23_28/0.05)]"
-                  : "text-ink-500 hover:bg-ink-100/60 hover:text-ink-900",
+                  : "text-ink-500 hover:translate-x-0.5 hover:bg-ink-100/60 hover:text-ink-900",
               )}
             >
+              {/* Barra que crece a la izquierda del ítem abierto */}
+              <span
+                className={cn(
+                  "absolute left-0 top-1/2 w-0.5 -translate-y-1/2 rounded-full bg-brand-600 transition-all duration-300",
+                  active ? "h-4 opacity-100" : "h-0 opacity-0",
+                )}
+              />
               <item.icon
-                className={cn("size-[17px] transition-colors", active ? "text-brand-600" : "text-ink-400 group-hover:text-ink-600")}
+                className={cn(
+                  "size-[17px] transition-all duration-200",
+                  active ? "text-brand-600" : "text-ink-400 group-hover:scale-110 group-hover:text-ink-600",
+                )}
                 strokeWidth={active ? 2 : 1.75}
               />
               {item.label}

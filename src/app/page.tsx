@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, Mail, MessageCircle } from "lucide-react";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { ScrollFx } from "@/components/landing/ScrollFx";
 import { CampaignMock, CaptureMock, HeroMock, ProfileMock } from "@/components/landing/Mocks";
-import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappUrl } from "@/lib/contact";
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY, mailtoUrl, whatsappUrl } from "@/lib/contact";
 
 export const metadata = {
   title: "SynapBase — La base de datos de tus clientes se arma sola",
@@ -37,17 +38,25 @@ function CheckItem({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Pregunta frecuente. Usa `<details>` nativo: se abre sin JavaScript y sin
- * animaciones, que es justo lo que pide el resto de la página.
+ * Pregunta frecuente sobre `<details>` nativo: funciona sin JavaScript y se
+ * abre con altura animada gracias al truco de `grid-template-rows` (.acc-body).
  */
 function Faq({ q, a }: { q: string; a: React.ReactNode }) {
   return (
-    <details className="group border-b border-inkblack/10 py-5">
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-6 [&::-webkit-details-marker]:hidden">
-        <h3 className="font-display text-[17px] font-bold tracking-[-0.02em] text-inkblack sm:text-[19px]">{q}</h3>
-        <ChevronDown className="mt-0.5 size-5 shrink-0 text-inkblack/35 transition-transform group-open:rotate-180" />
+    <details className="group border-b border-inkblack/10">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-6 py-5 [&::-webkit-details-marker]:hidden">
+        <h3 className="font-display text-[17px] font-bold tracking-[-0.02em] text-inkblack transition-colors group-hover:text-coral sm:text-[19px]">
+          {q}
+        </h3>
+        <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-inkblack/12 transition-all duration-300 group-hover:border-coral/40 group-open:rotate-180 group-open:border-coral/40 group-open:bg-coral/8">
+          <ChevronDown className="size-3.5 text-inkblack/45 transition-colors group-open:text-coral" />
+        </span>
       </summary>
-      <div className="body-copy mt-3 max-w-[62ch] pr-10 text-[15px] text-inkblack/65">{a}</div>
+      <div className="acc-body">
+        <div>
+          <div className="body-copy max-w-[62ch] pb-5 pr-10 text-[15px] text-inkblack/65">{a}</div>
+        </div>
+      </div>
     </details>
   );
 }
@@ -92,18 +101,34 @@ export default function LandingPage() {
   return (
     <div className="min-h-dvh bg-offwhite font-sans text-inkblack antialiased">
       <ScrollReveal />
+      <ScrollFx />
+      <div id="scroll-progress" className="scroll-progress" />
 
       {/* ————— Nav ————— */}
-      <header className="sticky top-0 z-40 border-b border-inkblack/8 bg-offwhite/85 backdrop-blur-md">
-        <nav className="mx-auto flex h-[70px] max-w-6xl items-center justify-between px-6">
+      <header
+        id="landing-header"
+        className="landing-header sticky top-0 z-40 border-b border-inkblack/8 bg-offwhite/85 backdrop-blur-md"
+      >
+        <nav className="header-inner mx-auto flex max-w-6xl items-center justify-between px-6">
           <Link href="/">
             <Wordmark />
           </Link>
           <div className="hidden items-center gap-8 text-[14px] font-medium text-inkblack/60 md:flex">
-            <a href="#captura" className="transition-colors hover:text-inkblack">Cómo funciona</a>
-            <a href="#proceso" className="transition-colors hover:text-inkblack">Proceso</a>
-            <a href="#precios" className="transition-colors hover:text-inkblack">Precios</a>
-            <a href="#preguntas" className="transition-colors hover:text-inkblack">Preguntas</a>
+            {[
+              ["#captura", "Cómo funciona"],
+              ["#proceso", "Proceso"],
+              ["#precios", "Precios"],
+              ["#preguntas", "Preguntas"],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="group relative transition-colors hover:text-inkblack"
+              >
+                {label}
+                <span className="absolute -bottom-1 left-0 h-px w-0 bg-coral transition-all duration-300 group-hover:w-full" />
+              </a>
+            ))}
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -114,7 +139,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/demo"
-              className="rounded-lg bg-inkblack px-4 py-2.5 text-[13.5px] font-bold text-white transition-all hover:bg-inkblack/85"
+              className="sheen rounded-lg bg-inkblack px-4 py-2.5 text-[13.5px] font-bold text-white transition-all hover:bg-inkblack/85"
             >
               Ver la demo
             </Link>
@@ -126,14 +151,21 @@ export default function LandingPage() {
       <section className="relative overflow-hidden px-6 pb-16 pt-20 sm:pt-28">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="rv font-display text-[13px] font-bold tracking-tight text-coral">
-              Un producto de synapse<span className="text-coral">.</span>
+            <p className="rv font-display inline-flex items-center gap-2 text-[13px] font-bold tracking-tight text-coral">
+              <span className="live-dot size-1.5 shrink-0 rounded-full bg-coral" />
+              {/* El texto va en un solo hijo para que el `gap` del flex no se
+                  meta entre "synapse" y su punto. */}
+              <span>Un producto de synapse.</span>
             </p>
             <h1
               className="rv display-title mx-auto mt-6 max-w-[16ch] text-[42px] sm:text-[64px]"
               style={{ ["--rv-delay" as string]: "80ms" }}
             >
-              La base de datos de tus clientes se arma sola
+              {["La base de datos", "de tus clientes", "se arma sola"].map((line, i) => (
+                <span key={line} className="line-mask" style={{ ["--i" as string]: i }}>
+                  <span>{line}</span>
+                </span>
+              ))}
             </h1>
             <p
               className="rv body-copy mx-auto mt-7 max-w-[52ch] text-[17px] text-inkblack/60"
@@ -148,10 +180,10 @@ export default function LandingPage() {
             >
               <Link
                 href="/demo"
-                className="group flex h-12 items-center gap-2 rounded-xl bg-coral px-6 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
+                className="sheen group flex h-12 items-center gap-2 rounded-xl bg-coral px-6 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
               >
                 Ver la demo
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
                 href="/register"
@@ -166,7 +198,40 @@ export default function LandingPage() {
           </div>
 
           <div className="rv rv-scale mx-auto mt-16 max-w-4xl" style={{ ["--rv-delay" as string]: "180ms" }}>
-            <HeroMock />
+            <div className="floaty">
+              <HeroMock />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ————— Cinta: lo que sabés de cada cliente ————— */}
+      <section className="border-y border-inkblack/8 bg-white py-5">
+        <div className="marquee">
+          {/* La lista va dos veces: cuando la primera copia termina de salir,
+              la segunda ya está en su lugar y el loop no se corta. */}
+          <div>
+            {[0, 1].map((copy) => (
+              <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
+                {[
+                  "Nombre y contacto",
+                  "Qué consume",
+                  "Cada cuánto vuelve",
+                  "Cuánto gasta",
+                  "A qué hora viene",
+                  "Cómo te conoció",
+                  "Qué edad tiene",
+                  "Hace cuánto no aparece",
+                ].map((t) => (
+                  <span key={t} className="flex items-center whitespace-nowrap">
+                    <span className="font-display px-7 text-[15px] font-bold tracking-tight text-inkblack/70">
+                      {t}
+                    </span>
+                    <span className="size-1.5 shrink-0 rounded-full bg-coral" />
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -240,10 +305,12 @@ export default function LandingPage() {
             ].map(([n, title, text], i) => (
               <div
                 key={n}
-                className="rv border-t border-inkblack/10 pt-8"
+                className="rv group border-t border-inkblack/10 pt-8 transition-colors hover:border-coral/40"
                 style={{ ["--rv-delay" as string]: `${i * 90}ms` }}
               >
-                <p className="numeral text-[52px] leading-none">{n}</p>
+                <p className="numeral origin-left text-[52px] leading-none transition-transform duration-300 group-hover:scale-110">
+                  {n}
+                </p>
                 <h3 className="font-display mt-4 text-[21px] font-bold tracking-tight text-inkblack">{title}</h3>
                 <p className="body-copy mt-2.5 max-w-[38ch] text-[15px] text-inkblack/60">{text}</p>
               </div>
@@ -275,7 +342,7 @@ export default function LandingPage() {
             ].map(([title, text], i) => (
               <div
                 key={title}
-                className="rounded-xl border border-white/12 bg-white/[0.04] px-5 py-4 backdrop-blur"
+                className="rounded-xl border border-white/12 bg-white/[0.04] px-5 py-4 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-coral/35 hover:bg-white/[0.07]"
                 style={{ ["--rv-delay" as string]: `${140 + i * 80}ms` }}
               >
                 <p className="font-display text-[15px] font-bold text-white">{title}</p>
@@ -324,8 +391,8 @@ export default function LandingPage() {
             ].map((p, i) => (
               <div
                 key={p.name}
-                className={`rv flex flex-col rounded-2xl border p-8 ${
-                  p.highlight ? "border-coral bg-white" : "border-inkblack/12 bg-white"
+                className={`rv lift flex flex-col rounded-2xl border p-8 ${
+                  p.highlight ? "border-coral bg-white shadow-[0_20px_60px_-30px_rgb(255_90_69/0.55)]" : "border-inkblack/12 bg-white"
                 }`}
                 style={{ ["--rv-delay" as string]: `${i * 100}ms` }}
               >
@@ -353,7 +420,7 @@ export default function LandingPage() {
                 </ul>
                 <Link
                   href="/register"
-                  className={`mt-8 flex h-12 items-center justify-center rounded-xl text-[14.5px] font-bold transition-all ${
+                  className={`sheen mt-8 flex h-12 items-center justify-center rounded-xl text-[14.5px] font-bold transition-all ${
                     p.highlight
                       ? "bg-coral text-white hover:bg-coral-600"
                       : "border border-inkblack/15 text-inkblack hover:border-inkblack/35"
@@ -442,7 +509,7 @@ export default function LandingPage() {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 rounded-2xl bg-coral px-6 py-5 text-white transition-colors hover:bg-coral-600"
+                  className="sheen lift group flex items-center gap-4 rounded-2xl bg-coral px-6 py-5 text-white transition-colors hover:bg-coral-600"
                 >
                   <MessageCircle className="size-6 shrink-0" strokeWidth={1.75} />
                   <span className="min-w-0 flex-1">
@@ -453,8 +520,8 @@ export default function LandingPage() {
                 </a>
 
                 <a
-                  href={`mailto:${CONTACT_EMAIL}`}
-                  className="group flex items-center gap-4 rounded-2xl border border-inkblack/15 px-6 py-5 text-inkblack transition-colors hover:border-inkblack/35"
+                  href={mailtoUrl}
+                  className="lift group flex items-center gap-4 rounded-2xl border border-inkblack/15 px-6 py-5 text-inkblack transition-colors hover:border-inkblack/35"
                 >
                   <Mail className="size-6 shrink-0 text-inkblack/45" strokeWidth={1.75} />
                   <span className="min-w-0 flex-1">
@@ -480,10 +547,10 @@ export default function LandingPage() {
           <div className="rv mt-10 flex flex-wrap items-center justify-center gap-3" style={{ ["--rv-delay" as string]: "100ms" }}>
             <Link
               href="/demo"
-              className="group flex h-12 items-center gap-2 rounded-xl bg-coral px-7 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
+              className="sheen group flex h-12 items-center gap-2 rounded-xl bg-coral px-7 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
             >
               Ver la demo
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/register"

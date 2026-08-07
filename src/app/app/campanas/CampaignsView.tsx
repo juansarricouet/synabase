@@ -23,6 +23,7 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/client";
 import { cn, formatDateTime, formatNumber, timeAgo } from "@/lib/utils";
 import type { Campaign, CampaignChannel, Segment } from "@/lib/types";
+import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 const VARIABLES = [
   { token: "{{nombre}}", label: "Nombre" },
@@ -55,6 +56,7 @@ export function CampaignsView({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const demo = useDemoMode();
   const [wizardOpen, setWizardOpen] = useState(!!presetSegmentId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [step, setStep] = useState(0);
@@ -211,15 +213,17 @@ export function CampaignsView({
           <>
             <button
               onClick={() => openEdit(c)}
-              className="rounded-lg p-2 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700"
-              title="Editar"
+              disabled={demo}
+              className="rounded-lg p-2 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              title={demo ? DEMO_HINT : "Editar"}
             >
               <Pencil className="size-4" />
             </button>
             <button
               onClick={() => setToSend(c)}
-              className="rounded-lg p-2 text-ink-400 transition hover:bg-success-50 hover:text-success-600"
-              title="Enviar ahora"
+              disabled={demo}
+              className="rounded-lg p-2 text-ink-400 transition hover:bg-success-50 hover:text-success-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+              title={demo ? DEMO_HINT : "Enviar ahora"}
             >
               <Send className="size-4" />
             </button>
@@ -227,8 +231,9 @@ export function CampaignsView({
         )}
         <button
           onClick={() => setToDelete(c)}
-          className="rounded-lg p-2 text-ink-400 transition hover:bg-danger-50 hover:text-danger-600"
-          title="Eliminar"
+          disabled={demo}
+          className="rounded-lg p-2 text-ink-400 transition hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          title={demo ? DEMO_HINT : "Eliminar"}
         >
           <Trash2 className="size-4" />
         </button>
@@ -239,7 +244,7 @@ export function CampaignsView({
   return (
     <div className="animate-fade-up">
       <div className="mb-5 flex justify-end">
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} disabled={demo} title={demo ? DEMO_HINT : undefined}>
           <Plus className="size-4" />
           Nueva campaña
         </Button>
@@ -252,7 +257,7 @@ export function CampaignsView({
             title="Tu primera campaña de retorno"
             description={'Elegí un segmento y mandá un mensaje personalizado: "Hola Juan, volvió tu hamburguesa favorita". Los datos ya los tenés.'}
             action={
-              <Button onClick={openCreate}>
+              <Button onClick={openCreate} disabled={demo} title={demo ? DEMO_HINT : undefined}>
                 <Plus className="size-4" />
                 Nueva campaña
               </Button>
@@ -312,10 +317,10 @@ export function CampaignsView({
               </Button>
             ) : (
               <>
-                <Button variant="secondary" onClick={() => persist("draft")} loading={saving}>
+                <Button variant="secondary" onClick={() => persist("draft")} loading={saving} disabled={demo} title={demo ? DEMO_HINT : undefined}>
                   Guardar borrador
                 </Button>
-                <Button onClick={() => persist("scheduled")} loading={saving} disabled={!schedule}>
+                <Button onClick={() => persist("scheduled")} loading={saving} disabled={demo || !schedule} title={demo ? DEMO_HINT : undefined}>
                   <CalendarClock className="size-4" />
                   Programar
                 </Button>

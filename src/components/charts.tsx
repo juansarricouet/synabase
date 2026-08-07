@@ -15,7 +15,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CHART_COLORS, cn, formatMonthKey, formatNumber } from "@/lib/utils";
+import { CHART_COLORS, RANKING_COLORS, cn, formatMonthKey, formatNumber } from "@/lib/utils";
 
 /* ————— Card contenedora ————— */
 
@@ -142,7 +142,7 @@ export function TopProductsChart({ data, height = 240 }: { data: { name: string;
         <Tooltip content={<SbTooltip />} cursor={{ fill: "#f5f5f7" }} />
         <Bar dataKey="count" name="Veces pedido" radius={[0, 6, 6, 0]} maxBarSize={18}>
           {data.map((_, i) => (
-            <Cell key={i} fill={i === 0 ? CHART_COLORS[0] : "#c7c6f1"} />
+            <Cell key={i} fill={i === 0 ? CHART_COLORS[0] : "#ffcec3"} />
           ))}
         </Bar>
       </BarChart>
@@ -267,12 +267,18 @@ export function DonutChart({
 
 /* ————— Distribución simple con barras CSS (opciones de encuestas) ————— */
 
-export function OptionBars({ options, color = CHART_COLORS[0] }: { options: { label: string; count: number }[]; color?: string }) {
+/**
+ * Barras horizontales de ranking.
+ *
+ * Sin `color` explícito, cada barra toma un naranja de RANKING_COLORS: el
+ * degradé de intenso a suave refuerza el orden de la lista.
+ */
+export function OptionBars({ options, color }: { options: { label: string; count: number }[]; color?: string }) {
   const max = Math.max(...options.map((o) => o.count), 1);
   const total = options.reduce((a, b) => a + b.count, 0) || 1;
   return (
     <div className="space-y-2.5">
-      {options.map((o) => (
+      {options.map((o, i) => (
         <div key={o.label}>
           <div className="mb-1 flex items-baseline justify-between gap-3 text-[12.5px]">
             <span className="truncate font-medium text-ink-700">{o.label}</span>
@@ -283,7 +289,10 @@ export function OptionBars({ options, color = CHART_COLORS[0] }: { options: { la
           <div className="h-2 overflow-hidden rounded-full bg-ink-100">
             <div
               className="h-full rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${(o.count / max) * 100}%`, background: color }}
+              style={{
+                width: `${(o.count / max) * 100}%`,
+                background: color ?? RANKING_COLORS[i % RANKING_COLORS.length],
+              }}
             />
           </div>
         </div>

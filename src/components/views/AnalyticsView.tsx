@@ -55,7 +55,7 @@ export function AnalyticsView({
             series={[
               { key: "nuevos", name: "Nuevos", color: CHART_COLORS[0]! },
               { key: "recuperados", name: "Recuperados", color: CHART_COLORS[2]! },
-              { key: "perdidos", name: "Perdidos", color: CHART_COLORS[4]! },
+              { key: "perdidos", name: "Perdidos", color: CHART_COLORS[1]! },
             ]}
             height={250}
           />

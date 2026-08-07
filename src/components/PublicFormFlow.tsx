@@ -33,7 +33,7 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
-  const accent = form.theme.color || "#5b5bd6";
+  const accent = form.theme.color || "#c73418";
 
   // Registrar el escaneo una sola vez por sesión
   useEffect(() => {

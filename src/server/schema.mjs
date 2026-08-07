@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   address     TEXT,
   phone       TEXT,
   logo_url    TEXT,
-  brand_color TEXT NOT NULL DEFAULT '#5b5bd6',
+  brand_color TEXT NOT NULL DEFAULT '#c73418',
   hours       TEXT,
   timezone    TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires',
   plan        TEXT NOT NULL DEFAULT 'pro',

@@ -155,7 +155,7 @@ export async function ensureDemoData() {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         bizId, "Café Martina", "cafe-martina", "Cafetería de especialidad",
-        "Armenia 1602, Palermo, CABA", "+54 11 5555 0199", "#5b5bd6",
+        "Armenia 1602, Palermo, CABA", "+54 11 5555 0199", "#c73418",
         "Lun a Vie 8:00–20:00 · Sáb y Dom 9:00–21:00", "pro",
         new Date(now - 240 * DAY).toISOString(),
       ],
@@ -186,7 +186,7 @@ export async function ensureDemoData() {
         "Contanos quién sos y llevate un beneficio para tu próxima visita. Te toma 30 segundos.",
         "¡Gracias por contarnos!",
         "Mostrá este código en la caja para usar tu descuento la próxima vez que vengas.",
-        JSON.stringify({ color: "#5b5bd6", showLogo: true, emoji: "☕" }),
+        JSON.stringify({ color: "#c73418", showLogo: true, emoji: "☕" }),
         formCreated, formCreated,
       ],
     );

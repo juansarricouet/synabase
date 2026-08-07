@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Database,
   ExternalLink,
+  Home,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -173,7 +174,15 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
               {demo ? "Cuenta de ejemplo" : role === "owner" ? "Propietario" : role === "admin" ? "Administrador" : "Miembro"}
             </span>
           </span>
-          {!demo && (
+          {demo ? (
+            <Link
+              href="/"
+              title="Volver al sitio"
+              className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+            >
+              <Home className="size-4" />
+            </Link>
+          ) : (
             <button
               onClick={logout}
               title="Cerrar sesión"
@@ -187,16 +196,20 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
     </div>
   );
 
+  /* La demo agrega una barra fija de 44px arriba de todo: el panel entero
+     arranca esa altura más abajo para que no le tape nada. */
+  const offset = demo ? "top-11" : "top-0";
+
   return (
-    <div className="flex min-h-dvh bg-canvas">
+    <div className={cn("flex min-h-dvh bg-canvas", demo && "pt-11")}>
       {/* Sidebar escritorio */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] border-r border-line bg-canvas lg:block">
+      <aside className={cn("fixed bottom-0 left-0 z-30 hidden w-[248px] border-r border-line bg-canvas lg:block", offset)}>
         {sidebar}
       </aside>
 
       {/* Sidebar móvil */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div className={cn("fixed inset-x-0 bottom-0 z-40 lg:hidden", offset)}>
           <div className="absolute inset-0 bg-ink-950/30 backdrop-blur-[2px] animate-fade-in" onClick={() => setMobileOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-[280px] border-r border-line bg-canvas shadow-modal animate-slide-in">
             {sidebar}
@@ -206,7 +219,7 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
 
       <div className="min-w-0 flex-1 lg:pl-[248px]">
         {/* Barra superior móvil */}
-        <div className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur lg:hidden">
+        <div className={cn("sticky z-20 flex h-14 items-center gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur lg:hidden", offset)}>
           <button onClick={() => setMobileOpen(true)} className="rounded-lg p-2 text-ink-600 hover:bg-ink-100">
             <Menu className="size-5" />
           </button>

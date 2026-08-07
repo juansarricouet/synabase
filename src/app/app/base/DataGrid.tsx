@@ -12,6 +12,7 @@ import { api } from "@/lib/client";
 import { exportCsv, exportExcel, exportPdf, type ExportTable } from "@/lib/export";
 import { cn, formatDateTime, formatMoney, formatNumber } from "@/lib/utils";
 import type { SubmissionRow } from "@/lib/types";
+import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 interface FormDef {
   id: string;
@@ -28,13 +29,16 @@ export function DataGrid({
   rows: initialRows,
   forms,
   businessName,
+  basePath = "/app",
 }: {
   rows: SubmissionRow[];
   forms: FormDef[];
   businessName: string;
+  basePath?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
+  const demo = useDemoMode();
   const [rows, setRows] = useState(initialRows);
   const [formFilter, setFormFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -218,9 +222,11 @@ export function DataGrid({
                 {questionCols.map((q) => (
                   <Th key={q.id}>
                     {q.label}
-                    <span className="ml-1 rounded bg-brand-100 px-1 py-px text-[9px] font-semibold uppercase text-brand-700">
-                      editable
-                    </span>
+                    {!demo && (
+                      <span className="ml-1 rounded bg-brand-100 px-1 py-px text-[9px] font-semibold uppercase text-brand-700">
+                        editable
+                      </span>
+                    )}
                   </Th>
                 ))}
                 <Th className="w-10"> </Th>
@@ -247,7 +253,7 @@ export function DataGrid({
                       </td>
                       <td className="px-4 py-2.5">
                         {r.customer_id ? (
-                          <Link href={`/app/clientes/${r.customer_id}`} className="font-medium text-ink-900 hover:text-brand-700">
+                          <Link href={`${basePath}/clientes/${r.customer_id}`} className="font-medium text-ink-900 hover:text-brand-700">
                             {r.customer_name ?? "—"}
                           </Link>
                         ) : (
@@ -264,7 +270,7 @@ export function DataGrid({
                       {questionCols.map((q) => {
                         const isEditing = editing?.rowId === r.id && editing.questionId === q.id;
                         const value = r.answers[q.id];
-                        const editable = EDITABLE_TYPES.has(q.type);
+                        const editable = !demo && EDITABLE_TYPES.has(q.type);
                         return (
                           <td
                             key={q.id}
@@ -322,7 +328,9 @@ export function DataGrid({
                       <td className="px-2 py-2.5">
                         <button
                           onClick={() => setToDelete(r.id)}
-                          className="rounded-lg p-1.5 text-ink-300 opacity-0 transition-all hover:bg-danger-50 hover:text-danger-600 group-hover:opacity-100"
+                          disabled={demo}
+                          title={demo ? DEMO_HINT : undefined}
+                          className="rounded-lg p-1.5 text-ink-300 opacity-0 transition-all hover:bg-danger-50 hover:text-danger-600 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-0"
                           aria-label="Eliminar registro"
                         >
                           <Trash2 className="size-3.5" />

@@ -12,7 +12,7 @@ export default function DemoDatabasePage() {
   return (
     <div>
       <PageHeader title="Base de datos" description={`${rows.length} registros capturados por tus formularios. Filtrá, agrupá y exportá.`} />
-      <DataGrid rows={rows} forms={forms} businessName={getDemoBusiness().name} />
+      <DataGrid rows={rows} forms={forms} businessName={getDemoBusiness().name} basePath="/demo" />
     </div>
   );
 }

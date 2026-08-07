@@ -5,7 +5,7 @@ import { log } from "../log";
 import { slugify } from "@/lib/utils";
 import type { Form, FormTheme, MapsTo, Question, QuestionType } from "@/lib/types";
 
-const DEFAULT_THEME: FormTheme = { color: "#5b5bd6", showLogo: true, emoji: "👋" };
+const DEFAULT_THEME: FormTheme = { color: "#c73418", showLogo: true, emoji: "👋" };
 
 function rowToQuestion(r: Record<string, unknown>): Question {
   return {

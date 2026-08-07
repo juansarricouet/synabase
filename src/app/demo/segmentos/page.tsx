@@ -11,6 +11,7 @@ export default function DemoSegmentsPage() {
         tags={demoTags()}
         questions={demoSegmentQuestions()}
         totalCustomers={demoTotalCustomers()}
+        basePath="/demo"
       />
     </div>
   );

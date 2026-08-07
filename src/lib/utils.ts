@@ -114,8 +114,13 @@ export function initials(name: string): string {
     .join("");
 }
 
-/** Deterministic soft color for avatars/tags from a string */
-const AVATAR_HUES = [246, 210, 160, 28, 340, 262, 190, 88];
+/**
+ * Color estable para avatares y etiquetas, derivado del texto.
+ *
+ * Son todos tonos de la familia del naranja (rojo-teja → ámbar): alcanzan para
+ * distinguir una persona de otra sin sacar al panel de la paleta de la marca.
+ */
+const AVATAR_HUES = [6, 14, 22, 30, 38, 46, 18, 34];
 export function stringHue(s: string): number {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -136,8 +141,42 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-/** Chart palette — coherent with Synapse brand */
-export const CHART_COLORS = ["#5b5bd6", "#9b99ec", "#45b08c", "#f0a63c", "#e5646e", "#57a8e0", "#c2c1f5", "#8f8f99"];
+/**
+ * Paleta de gráficos — tonos de naranja de la identidad Synapse.
+ *
+ * El orden importa: los índices 0 y 2 se dibujan juntos en el gráfico de
+ * nuevos vs. recurrentes, así que están lo más separados posible (naranja
+ * quemado contra ámbar). El último es un gris cálido, para categorías
+ * neutras del tipo "otros".
+ */
+export const CHART_COLORS = [
+  "#c73418", // quemado
+  "#ff8a5b", // coral claro
+  "#f0a63c", // ámbar
+  "#7a2f16", // teja
+  "#ff5a45", // coral
+  "#ffc98a", // arena
+  "#a52c12", // ladrillo
+  "#b8ada6", // gris cálido
+];
+
+/**
+ * Rampa para barras de ranking, del naranja más intenso al más suave.
+ *
+ * A diferencia de CHART_COLORS —pensada para categorías sin orden, donde lo
+ * que importa es distinguirlas— acá el degradé refuerza la posición: la barra
+ * más fuerte es la primera. Se cicla si la lista es más larga.
+ */
+export const RANKING_COLORS = [
+  "#b32c14",
+  "#c73418",
+  "#e04426",
+  "#f4623a",
+  "#ff8a5b",
+  "#ffa87c",
+  "#ffc09b",
+  "#ffd6bb",
+];
 
 export function downloadBlob(content: BlobPart, filename: string, type: string) {
   const blob = new Blob([content], { type });

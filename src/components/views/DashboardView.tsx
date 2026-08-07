@@ -45,7 +45,7 @@ export function DashboardView({
       />
 
       {stats.total_submissions === 0 ? (
-        <SetupChecklist formId={mainForm?.id} slug={mainForm?.slug} />
+        <SetupChecklist formId={mainForm?.id} slug={mainForm?.slug} basePath={basePath} />
       ) : (
         <>
           {/* KPIs */}
@@ -201,34 +201,44 @@ function StatCard({
           </Badge>
         )}
       </div>
-      <p className="tabular mt-3 text-[24px] font-semibold leading-none tracking-tight text-ink-950">{value}</p>
+      <p className="tabular font-display mt-3 text-[25px] font-extrabold leading-none tracking-[-0.03em] text-ink-950">
+        {value}
+      </p>
       <p className="mt-1.5 text-[12.5px] font-medium text-ink-500">{label}</p>
       {sub && <p className="mt-0.5 text-[11.5px] text-ink-400">{sub}</p>}
     </div>
   );
 }
 
-function SetupChecklist({ formId, slug }: { formId?: string; slug?: string }) {
+function SetupChecklist({
+  formId,
+  slug,
+  basePath,
+}: {
+  formId?: string;
+  slug?: string;
+  basePath: string;
+}) {
   const steps = [
     {
       icon: ClipboardList,
       title: "Personalizá tu formulario",
       text: "Definí qué querés saber de tus clientes: qué consumen, cómo te conocieron, lo que necesites.",
-      href: formId ? `/app/formularios/${formId}` : "/app/formularios",
+      href: formId ? `${basePath}/formularios/${formId}` : `${basePath}/formularios`,
       cta: "Abrir constructor",
     },
     {
       icon: QrCode,
       title: "Descargá tu QR",
       text: "Imprimilo y ponelo en mesas, mostrador o vidriera con el mensaje del beneficio.",
-      href: formId ? `/app/formularios/${formId}?tab=qr` : "/app/formularios",
+      href: formId ? `${basePath}/formularios/${formId}?tab=qr` : `${basePath}/formularios`,
       cta: "Generar QR",
     },
     {
       icon: Share2,
       title: "Empezá a capturar clientes",
       text: "Cada escaneo se convierte en un registro con nombre, consumo y contacto.",
-      href: slug ? `/f/${slug}` : "/app",
+      href: slug ? `/f/${slug}` : basePath,
       cta: "Probar como cliente",
       external: true,
     },

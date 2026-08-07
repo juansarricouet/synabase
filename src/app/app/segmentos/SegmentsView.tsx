@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/client";
 import { cn, formatNumber } from "@/lib/utils";
 import type { Segment, SegmentRule, Tag } from "@/lib/types";
+import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 import Link from "next/link";
 
 export interface QuestionOption {
@@ -82,14 +83,17 @@ export function SegmentsView({
   tags,
   questions,
   totalCustomers,
+  basePath = "/app",
 }: {
   segments: Segment[];
   tags: Tag[];
   questions: QuestionOption[];
   totalCustomers: number;
+  basePath?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
+  const demo = useDemoMode();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -181,12 +185,14 @@ export function SegmentsView({
           <button
             key={p.label}
             onClick={() => openCreate(p)}
-            className="rounded-full border border-line-strong/80 bg-white px-3.5 py-1.5 text-[12.5px] font-medium text-ink-600 shadow-card transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+            disabled={demo}
+            title={demo ? DEMO_HINT : undefined}
+            className="rounded-full border border-line-strong/80 bg-white px-3.5 py-1.5 text-[12.5px] font-medium text-ink-600 shadow-card transition-all hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-line-strong/80 disabled:hover:bg-white disabled:hover:text-ink-600"
           >
             {p.label}
           </button>
         ))}
-        <Button onClick={() => openCreate()} className="ml-auto">
+        <Button onClick={() => openCreate()} disabled={demo} title={demo ? DEMO_HINT : undefined} className="ml-auto">
           <Plus className="size-4" />
           Nuevo segmento
         </Button>
@@ -199,7 +205,7 @@ export function SegmentsView({
             title="Creá tu primer segmento"
             description="Por ejemplo: clientes que hace más de 30 días que no vienen, o los que consumieron cerveza. Usá los atajos de arriba para empezar."
             action={
-              <Button onClick={() => openCreate()}>
+              <Button onClick={() => openCreate()} disabled={demo} title={demo ? DEMO_HINT : undefined}>
                 <Plus className="size-4" />
                 Nuevo segmento
               </Button>
@@ -219,13 +225,17 @@ export function SegmentsView({
                   <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={() => openEdit(s)}
-                      className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700"
+                      disabled={demo}
+                      title={demo ? DEMO_HINT : undefined}
+                      className="rounded-lg p-1.5 text-ink-400 transition hover:bg-ink-100 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <Pencil className="size-3.5" />
                     </button>
                     <button
                       onClick={() => setToDelete(s)}
-                      className="rounded-lg p-1.5 text-ink-400 transition hover:bg-danger-50 hover:text-danger-600"
+                      disabled={demo}
+                      title={demo ? DEMO_HINT : undefined}
+                      className="rounded-lg p-1.5 text-ink-400 transition hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <Trash2 className="size-3.5" />
                     </button>
@@ -254,7 +264,7 @@ export function SegmentsView({
                     <div className="h-full rounded-full bg-brand-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                   </div>
                   <Link
-                    href={`/app/campanas?segmento=${s.id}`}
+                    href={`${basePath}/campanas?segmento=${s.id}`}
                     className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-700 transition-colors hover:text-brand-600"
                   >
                     <Send className="size-3.5" />
@@ -289,7 +299,7 @@ export function SegmentsView({
               )}
             </div>
             <Button variant="secondary" onClick={() => setEditorOpen(false)}>Cancelar</Button>
-            <Button onClick={save} loading={saving}>Guardar segmento</Button>
+            <Button onClick={save} loading={saving} disabled={demo} title={demo ? DEMO_HINT : undefined}>Guardar segmento</Button>
           </>
         }
       >

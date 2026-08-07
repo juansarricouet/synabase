@@ -12,6 +12,7 @@ import { api } from "@/lib/client";
 import { cn, formatNumber } from "@/lib/utils";
 import type { Business, Role } from "@/lib/types";
 import type { Invitation, Member } from "@/server/services/business";
+import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 type Tab = "negocio" | "equipo" | "facturacion";
 
@@ -62,6 +63,7 @@ export function SettingsView({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const demo = useDemoMode();
   const [tab, setTab] = useState<Tab>("negocio");
   const canAdmin = role === "owner" || role === "admin";
 
@@ -213,8 +215,9 @@ export function SettingsView({
             <div className="flex items-center gap-4">
               <button
                 onClick={() => fileRef.current?.click()}
-                className="group relative flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-ink-300 bg-ink-50 transition hover:border-brand-400"
-                title="Subir logo"
+                disabled={demo}
+                className="group relative flex size-16 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-ink-300 bg-ink-50 transition hover:border-brand-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-ink-300"
+                title={demo ? DEMO_HINT : "Subir logo"}
               >
                 {form.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -229,7 +232,9 @@ export function SettingsView({
                 {form.logo_url && (
                   <button
                     onClick={() => setForm((f) => ({ ...f, logo_url: null }))}
-                    className="mt-0.5 font-medium text-danger-600 hover:underline"
+                    disabled={demo}
+                    title={demo ? DEMO_HINT : undefined}
+                    className="mt-0.5 font-medium text-danger-600 hover:underline disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:no-underline"
                   >
                     Quitar logo
                   </button>
@@ -282,7 +287,7 @@ export function SettingsView({
 
           {canAdmin && (
             <div className="flex justify-end">
-              <Button onClick={saveBusiness} loading={saving}>Guardar cambios</Button>
+              <Button onClick={saveBusiness} loading={saving} disabled={demo} title={demo ? DEMO_HINT : undefined}>Guardar cambios</Button>
             </div>
           )}
         </div>
@@ -323,8 +328,9 @@ export function SettingsView({
                   {canAdmin && m.role !== "owner" && m.user_id !== currentUserId && (
                     <button
                       onClick={() => removeMember(m.membership_id)}
-                      className="rounded-lg p-2 text-ink-300 transition hover:bg-danger-50 hover:text-danger-600"
-                      title="Quitar"
+                      disabled={demo}
+                      className="rounded-lg p-2 text-ink-300 transition hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                      title={demo ? DEMO_HINT : "Quitar"}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -356,7 +362,7 @@ export function SettingsView({
                     <option value="admin">Admin</option>
                   </Select>
                 </Field>
-                <Button type="submit" loading={inviting}>
+                <Button type="submit" loading={inviting} disabled={demo} title={demo ? DEMO_HINT : undefined}>
                   <Send className="size-4" />
                   Invitar
                 </Button>
@@ -384,8 +390,9 @@ export function SettingsView({
                       </button>
                       <button
                         onClick={() => revoke(inv.id)}
-                        className="rounded-lg p-1.5 text-ink-300 transition hover:bg-danger-50 hover:text-danger-600"
-                        title="Revocar"
+                        disabled={demo}
+                        className="rounded-lg p-1.5 text-ink-300 transition hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                        title={demo ? DEMO_HINT : "Revocar"}
                       >
                         <X className="size-3.5" />
                       </button>
@@ -452,7 +459,8 @@ export function SettingsView({
                   <Button
                     variant={current ? "secondary" : p.highlight ? "brand" : "primary"}
                     className="mt-5 w-full"
-                    disabled={current || !canAdmin}
+                    disabled={demo || current || !canAdmin}
+                    title={demo ? DEMO_HINT : undefined}
                     loading={changingPlan === p.id}
                     onClick={() => changePlan(p.id)}
                   >

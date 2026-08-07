@@ -122,7 +122,7 @@ function rowToBusiness(row: Record<string, unknown>): Business {
     address: (row.address as string) ?? null,
     phone: (row.phone as string) ?? null,
     logo_url: (row.logo_url as string) ?? null,
-    brand_color: (row.brand_color as string) ?? "#5b5bd6",
+    brand_color: (row.brand_color as string) ?? "#c73418",
     hours: (row.hours as string) ?? null,
     plan: (row.plan as string) ?? "pro",
     created_at: row.created_at as string,

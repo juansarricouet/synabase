@@ -27,10 +27,12 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/client";
 import { formatNumber, timeAgo } from "@/lib/utils";
 import type { Form } from "@/lib/types";
+import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
-export function FormsGrid({ forms }: { forms: Form[] }) {
+export function FormsGrid({ forms, basePath = "/app" }: { forms: Form[]; basePath?: string }) {
   const router = useRouter();
   const toast = useToast();
+  const demo = useDemoMode();
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -45,7 +47,7 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
     try {
       const { form } = await api<{ form: Form }>("/api/forms", { body: { name: newName.trim() } });
       toast("success", "Formulario creado");
-      router.push(`/app/formularios/${form.id}`);
+      router.push(`${basePath}/formularios/${form.id}`);
       router.refresh();
     } catch (err) {
       toast("error", err instanceof Error ? err.message : "No se pudo crear");
@@ -96,7 +98,7 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
   const FormCard = ({ form }: { form: Form }) => (
     <div className="card card-hover group relative flex flex-col p-5">
       <div className="flex items-start justify-between gap-2">
-        <Link href={`/app/formularios/${form.id}`} className="min-w-0 flex-1">
+        <Link href={`${basePath}/formularios/${form.id}`} className="min-w-0 flex-1">
           <div className="flex size-10 items-center justify-center rounded-xl text-xl" style={{ background: `${form.theme.color}14` }}>
             {form.theme.emoji || "📋"}
           </div>
@@ -122,20 +124,22 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
           >
             {!form.is_template && (
               <>
-                <DropdownItem icon={Link2} onClick={() => copyLink(form)}>Copiar link</DropdownItem>
-                <DropdownItem icon={QrCode} onClick={() => router.push(`/app/formularios/${form.id}?tab=qr`)}>
+                {!demo && <DropdownItem icon={Link2} onClick={() => copyLink(form)}>Copiar link</DropdownItem>}
+                <DropdownItem icon={QrCode} onClick={() => router.push(`${basePath}/formularios/${form.id}?tab=qr`)}>
                   Ver código QR
                 </DropdownItem>
-                <DropdownItem icon={form.status === "active" ? Pause : Play} onClick={() => toggleStatus(form)}>
-                  {form.status === "active" ? "Pausar" : "Activar"}
-                </DropdownItem>
+                {!demo && (
+                  <DropdownItem icon={form.status === "active" ? Pause : Play} onClick={() => toggleStatus(form)}>
+                    {form.status === "active" ? "Pausar" : "Activar"}
+                  </DropdownItem>
+                )}
               </>
             )}
-            <DropdownItem icon={Copy} onClick={() => duplicate(form, false)}>Duplicar</DropdownItem>
-            {!form.is_template && (
+            {!demo && <DropdownItem icon={Copy} onClick={() => duplicate(form, false)}>Duplicar</DropdownItem>}
+            {!demo && !form.is_template && (
               <DropdownItem icon={FileStack} onClick={() => duplicate(form, true)}>Guardar como plantilla</DropdownItem>
             )}
-            <DropdownItem icon={Trash2} danger onClick={() => setToDelete(form)}>Eliminar</DropdownItem>
+            {!demo && <DropdownItem icon={Trash2} danger onClick={() => setToDelete(form)}>Eliminar</DropdownItem>}
           </Dropdown>
         </div>
       </div>
@@ -157,7 +161,9 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
         <div className="mt-4 border-t border-line pt-3.5">
           <button
             onClick={() => duplicate(form, false)}
-            className="text-[13px] font-semibold text-brand-700 transition-colors hover:text-brand-600"
+            disabled={demo}
+            title={demo ? DEMO_HINT : undefined}
+            className="text-[13px] font-semibold text-brand-700 transition-colors hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-45"
           >
             Crear formulario desde esta plantilla →
           </button>
@@ -169,7 +175,7 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
   return (
     <div className="animate-fade-up">
       <div className="mb-4 flex justify-end">
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} disabled={demo} title={demo ? DEMO_HINT : undefined}>
           <Plus className="size-4" />
           Nueva encuesta
         </Button>
@@ -182,7 +188,7 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
             title="Creá tu primer formulario"
             description="Definí qué querés saber de tus clientes y generá el QR para tu local."
             action={
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button onClick={() => setCreateOpen(true)} disabled={demo} title={demo ? DEMO_HINT : undefined}>
                 <Plus className="size-4" />
                 Nueva encuesta
               </Button>
@@ -219,7 +225,7 @@ export function FormsGrid({ forms }: { forms: Form[] }) {
         footer={
           <>
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button onClick={createForm} loading={creating}>Crear y personalizar</Button>
+            <Button onClick={createForm} loading={creating} disabled={demo} title={demo ? DEMO_HINT : undefined}>Crear y personalizar</Button>
           </>
         }
       >

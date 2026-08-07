@@ -9,12 +9,13 @@ import { PublicFormFlow } from "@/components/PublicFormFlow";
 import { api } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import type { Form, FormTheme, Question } from "@/lib/types";
+import { useDemoMode } from "@/components/demo/DemoMode";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { QrPanel } from "./QrPanel";
 
 type Tab = "preguntas" | "diseno" | "qr";
 
-const SWATCHES = ["#5b5bd6", "#0e7490", "#b45309", "#be185d", "#15803d", "#17171c", "#7c3aed", "#c2410c"];
+const SWATCHES = ["#c73418", "#0e7490", "#b45309", "#be185d", "#15803d", "#17171c", "#7c3aed", "#c2410c"];
 const EMOJIS = ["👋", "☕", "🍔", "🍕", "🍺", "🍦", "🥐", "🛍️", "💈", "💪", "🌿", "✨"];
 
 export function FormBuilder({
@@ -32,6 +33,7 @@ export function FormBuilder({
   const [questions, setQuestions] = useState<Question[]>(initialForm.questions ?? []);
   const [previewKey, setPreviewKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  const demo = useDemoMode();
 
   /* Guardado con debounce de los campos de texto/tema */
   const pendingRef = useRef<Record<string, unknown>>({});
@@ -39,6 +41,9 @@ export function FormBuilder({
 
   const queueSave = useCallback(
     (patch: Record<string, unknown>) => {
+      // En la demo el constructor se puede tocar y la vista previa responde,
+      // pero no hay a dónde guardar: cortamos antes de llamar a la API.
+      if (demo) return;
       pendingRef.current = deepMerge(pendingRef.current, patch);
       if (timerRef.current) clearTimeout(timerRef.current);
       setSaving(true);
@@ -54,7 +59,7 @@ export function FormBuilder({
         }
       }, 700);
     },
-    [initialForm.id, toast],
+    [initialForm.id, toast, demo],
   );
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
@@ -78,7 +83,7 @@ export function FormBuilder({
             className="w-full max-w-md truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-[20px] font-semibold tracking-tight text-ink-950 outline-none transition hover:border-line focus:border-brand-400 focus:bg-white"
           />
           <p className="mt-0.5 flex items-center gap-2 px-2 text-xs text-ink-400">
-            {saving ? "Guardando…" : "Guardado"}
+            {demo ? "Modo demo · los cambios no se guardan" : saving ? "Guardando…" : "Guardado"}
             <span className="size-1 rounded-full bg-ink-300" />
             <button
               onClick={() => {

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Mail, MessageCircle } from "lucide-react";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { CampaignMock, CaptureMock, HeroMock, ProfileMock } from "@/components/landing/Mocks";
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappUrl } from "@/lib/contact";
 
 export const metadata = {
   title: "SynapBase — La base de datos de tus clientes se arma sola",
@@ -32,6 +33,22 @@ function CheckItem({ children }: { children: React.ReactNode }) {
       <Check className="mt-0.5 size-4 shrink-0 text-inkblack" strokeWidth={3} />
       <span className="body-copy text-[15px] text-inkblack/75">{children}</span>
     </li>
+  );
+}
+
+/**
+ * Pregunta frecuente. Usa `<details>` nativo: se abre sin JavaScript y sin
+ * animaciones, que es justo lo que pide el resto de la página.
+ */
+function Faq({ q, a }: { q: string; a: React.ReactNode }) {
+  return (
+    <details className="group border-b border-inkblack/10 py-5">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-6 [&::-webkit-details-marker]:hidden">
+        <h3 className="font-display text-[17px] font-bold tracking-[-0.02em] text-inkblack sm:text-[19px]">{q}</h3>
+        <ChevronDown className="mt-0.5 size-5 shrink-0 text-inkblack/35 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="body-copy mt-3 max-w-[62ch] pr-10 text-[15px] text-inkblack/65">{a}</div>
+    </details>
   );
 }
 
@@ -86,6 +103,7 @@ export default function LandingPage() {
             <a href="#captura" className="transition-colors hover:text-inkblack">Cómo funciona</a>
             <a href="#proceso" className="transition-colors hover:text-inkblack">Proceso</a>
             <a href="#precios" className="transition-colors hover:text-inkblack">Precios</a>
+            <a href="#preguntas" className="transition-colors hover:text-inkblack">Preguntas</a>
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -349,6 +367,108 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ————— Preguntas frecuentes ————— */}
+      <section id="preguntas" className="border-t border-inkblack/8 px-6 py-20 sm:py-28">
+        <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+          <div className="rv rv-left lg:sticky lg:top-28 lg:self-start">
+            <Eyebrow n="05">Preguntas</Eyebrow>
+            <h2 className="display-title mt-4 max-w-[12ch] text-[34px] sm:text-[42px]">
+              Lo que todos preguntan antes de empezar
+            </h2>
+            <p className="body-copy mt-5 max-w-[36ch] text-[15px] text-inkblack/60">
+              Si lo tuyo no está acá, escribinos por WhatsApp y te contestamos nosotros.
+            </p>
+          </div>
+
+          <div className="rv" style={{ ["--rv-delay" as string]: "100ms" }}>
+            <Faq
+              q="¿Mis clientes tienen que bajarse una app?"
+              a="No. Escanean el QR con la cámara del celular, se abre una página web, responden y listo. No hay nada que instalar, ni de tu lado ni del de ellos."
+            />
+            <Faq
+              q="¿Cuánto tarda una persona en completar el formulario?"
+              a="Alrededor de treinta segundos. Vos elegís cuántas preguntas hacer: cuantas menos, más gente lo termina. Con el nombre y qué consumió ya tenés una ficha útil."
+            />
+            <Faq
+              q="¿Y si no quiero dar descuento?"
+              a="El descuento es el gancho más común, pero podés usar lo que quieras: un café de regalo, un sorteo mensual, puntos. Lo que importa es que haya un motivo para escanear."
+            />
+            <Faq
+              q="¿De quién son los datos que se cargan?"
+              a="Tuyos. Cada comercio ve solamente su propia base, y podés exportarla entera a CSV, Excel o PDF cuando quieras. Si te vas, te llevás tu información."
+            />
+            <Faq
+              q="¿Sirve si tengo más de un local?"
+              a="Sí. Podés generar un QR distinto por sucursal y ver los datos juntos o separados. El plan Business incluye múltiples sucursales y usuarios con permisos."
+            />
+            <Faq
+              q="¿Necesito saber de tecnología para usarlo?"
+              a="No. Creás la cuenta, elegís las preguntas, descargás el QR y lo imprimís. El panel está pensado para que lo use quien atiende, no un equipo de sistemas."
+            />
+            <Faq
+              q="¿Puedo probarlo antes de pagar?"
+              a={
+                <>
+                  Sí, de dos formas: mirando la{" "}
+                  <Link href="/demo" className="font-semibold text-coral underline underline-offset-4">
+                    demo con datos de ejemplo
+                  </Link>{" "}
+                  sin registrarte, o creando una cuenta Free, que no vence ni pide tarjeta.
+                </>
+              }
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ————— Contacto ————— */}
+      <section id="contacto" className="border-t border-inkblack/8 px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="rv rounded-3xl border border-inkblack/12 bg-white p-8 sm:p-12">
+            <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <Eyebrow n="06">Contacto</Eyebrow>
+                <h2 className="display-title mt-4 max-w-[16ch] text-[30px] sm:text-[38px]">
+                  ¿Te quedó alguna duda? Escribinos.
+                </h2>
+                <p className="body-copy mt-5 max-w-[46ch] text-[15px] text-inkblack/65">
+                  Contestamos nosotros, no un bot. Contanos qué tipo de local tenés y te decimos si
+                  SynapBase te sirve — aunque la respuesta sea que no.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center gap-4 rounded-2xl bg-coral px-6 py-5 text-white transition-colors hover:bg-coral-600"
+                >
+                  <MessageCircle className="size-6 shrink-0" strokeWidth={1.75} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-bold">Escribinos por WhatsApp</span>
+                    <span className="block text-[13px] text-white/80">{WHATSAPP_DISPLAY}</span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </a>
+
+                <a
+                  href={`mailto:${CONTACT_EMAIL}`}
+                  className="group flex items-center gap-4 rounded-2xl border border-inkblack/15 px-6 py-5 text-inkblack transition-colors hover:border-inkblack/35"
+                >
+                  <Mail className="size-6 shrink-0 text-inkblack/45" strokeWidth={1.75} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-bold">Mandanos un mail</span>
+                    <span className="block truncate text-[13px] text-inkblack/50">{CONTACT_EMAIL}</span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-inkblack/35 transition-transform group-hover:translate-x-0.5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ————— Cierre ————— */}
       <section className="border-t border-inkblack/8 px-6 py-24 sm:py-32">
         <div className="mx-auto max-w-3xl text-center">
@@ -383,6 +503,15 @@ export default function LandingPage() {
             © {new Date().getFullYear()} Synapse · La base de datos inteligente para comercios
           </p>
           <div className="flex items-center gap-6 text-[13px] font-medium text-inkblack/50">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 transition-colors hover:text-coral"
+            >
+              <MessageCircle className="size-3.5" />
+              WhatsApp
+            </a>
             <Link href="/demo" className="transition-colors hover:text-inkblack">Demo</Link>
             <Link href="/login" className="transition-colors hover:text-inkblack">Iniciar sesión</Link>
             <Link href="/register" className="transition-colors hover:text-inkblack">Crear cuenta</Link>

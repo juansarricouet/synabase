@@ -1,5 +1,10 @@
 import { cn } from "@/lib/utils";
 
+/**
+ * `violet` es el color de marca. Conserva el nombre viejo porque queda
+ * guardado en la columna `color` de las etiquetas: renombrarlo dejaría sin
+ * color a las etiquetas ya creadas. Hoy pinta naranja, como el resto del panel.
+ */
 export type BadgeColor = "gray" | "violet" | "green" | "amber" | "red" | "sky" | "pink";
 
 const colors: Record<BadgeColor, string> = {

@@ -2,11 +2,11 @@ import { Landing } from "@/components/landing/Landing";
 import { COPY } from "@/lib/landing-copy";
 
 export const metadata = {
-  title: COPY.es.meta.title,
-  description: COPY.es.meta.description,
+  title: COPY.en.meta.title,
+  description: COPY.en.meta.description,
   alternates: { languages: { es: "/", en: "/en" } },
 };
 
-export default function LandingPageEs() {
-  return <Landing lang="es" />;
+export default function LandingPageEn() {
+  return <Landing lang="en" />;
 }

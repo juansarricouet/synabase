@@ -27,11 +27,11 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "$29.900",
+    price: "$45.000",
     period: "por mes",
     features: [
       "Formularios y clientes ilimitados",
-      "Segmentos y campañas",
+      "Segmentos y campañas por email",
       "Estadísticas avanzadas y exportación",
       "QR personalizado con tu marca",
     ],
@@ -40,9 +40,14 @@ const PLANS = [
   {
     id: "business",
     name: "Business",
-    price: "$59.900",
+    price: "$90.000",
     period: "por mes",
-    features: ["Todo lo de Pro", "Múltiples sucursales", "Roles y permisos avanzados", "Soporte prioritario"],
+    features: [
+      "Todo lo de Pro",
+      "Campañas por WhatsApp",
+      "Múltiples sucursales",
+      "Roles, permisos y soporte prioritario",
+    ],
   },
 ];
 

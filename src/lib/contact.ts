@@ -11,14 +11,14 @@
  */
 const COUNTRY_CODE = "549";
 
-/** Número sin código de país, sin espacios ni guiones. */
-const LOCAL_NUMBER = "2020257395";
+/** Número sin código de país, sin espacios ni guiones. 2920 es Viedma. */
+const LOCAL_NUMBER = "2920257395";
 
 /** Número completo tal como lo espera wa.me. */
 export const WHATSAPP_NUMBER = `${COUNTRY_CODE}${LOCAL_NUMBER}`;
 
 /** Cómo se muestra el número en pantalla. */
-export const WHATSAPP_DISPLAY = "+54 9 2020 25-7395";
+export const WHATSAPP_DISPLAY = "+54 9 2920 25-7395";
 
 /** Texto que aparece ya escrito en el chat cuando abren el link. */
 export const WHATSAPP_MESSAGE = "¡Hola! Vi SynapBase y quería hacerles una consulta.";

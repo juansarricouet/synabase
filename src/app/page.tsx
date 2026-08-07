@@ -1,228 +1,280 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BarChart3,
-  Check,
-  ClipboardList,
-  Database,
-  MessageCircle,
-  QrCode,
-  ScanLine,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Users,
-} from "lucide-react";
-import { Logo, LogoMark } from "@/components/Logo";
-import { RevealObserver } from "@/components/Reveal";
+import { ArrowRight, Check } from "lucide-react";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { CampaignMock, CaptureMock, HeroMock, ProfileMock } from "@/components/landing/Mocks";
+
+export const metadata = {
+  title: "SynapBase — La base de datos de tus clientes se arma sola",
+  description:
+    "Un QR en tu local convierte cada visita en un cliente conocido: quién es, qué consume y cuándo vuelve. Un producto de Synapse.",
+};
+
+/** Marca de palabra al estilo Synapse: minúsculas, bold y punto en coral. */
+function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`font-display text-[19px] font-extrabold tracking-tight text-inkblack ${className}`}>
+      synapbase<span className="text-coral">.</span>
+    </span>
+  );
+}
+
+function Eyebrow({ n, children }: { n: string; children: React.ReactNode }) {
+  return (
+    <p className="font-display text-[13px] font-bold tracking-tight text-coral">
+      {n} — {children}
+    </p>
+  );
+}
+
+function CheckItem({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-3">
+      <Check className="mt-0.5 size-4 shrink-0 text-inkblack" strokeWidth={3} />
+      <span className="body-copy text-[15px] text-inkblack/75">{children}</span>
+    </li>
+  );
+}
+
+/** Sección numerada: texto de un lado, maqueta del otro, alternando. */
+function FeatureSection({
+  n,
+  eyebrow,
+  title,
+  items,
+  mock,
+  flip = false,
+}: {
+  n: string;
+  eyebrow: string;
+  title: React.ReactNode;
+  items: string[];
+  mock: React.ReactNode;
+  flip?: boolean;
+}) {
+  return (
+    <section className="border-t border-inkblack/8 py-20 sm:py-28">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-2 lg:gap-16">
+        <div className={`rv ${flip ? "rv-right lg:order-2" : "rv-left"}`}>
+          <Eyebrow n={n}>{eyebrow}</Eyebrow>
+          <h2 className="display-title mt-4 max-w-[13ch] text-[34px] sm:text-[42px]">{title}</h2>
+          <ul className="mt-8 space-y-4">
+            {items.map((t) => (
+              <CheckItem key={t}>{t}</CheckItem>
+            ))}
+          </ul>
+        </div>
+        <div className={`rv rv-scale ${flip ? "lg:order-1" : ""}`} style={{ ["--rv-delay" as string]: "120ms" }}>
+          {mock}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage() {
   return (
-    <div className="bg-white text-ink-950">
-      <RevealObserver />
+    <div className="min-h-dvh bg-offwhite font-sans text-inkblack antialiased">
+      <ScrollReveal />
 
       {/* ————— Nav ————— */}
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <header className="sticky top-0 z-40 border-b border-inkblack/8 bg-offwhite/85 backdrop-blur-md">
+        <nav className="mx-auto flex h-[70px] max-w-6xl items-center justify-between px-6">
           <Link href="/">
-            <Logo />
+            <Wordmark />
           </Link>
-          <div className="hidden items-center gap-7 text-[13.5px] font-medium text-ink-500 md:flex">
-            <a href="#producto" className="transition-colors hover:text-ink-950">Producto</a>
-            <a href="#como-funciona" className="transition-colors hover:text-ink-950">Cómo funciona</a>
-            <a href="#precios" className="transition-colors hover:text-ink-950">Precios</a>
+          <div className="hidden items-center gap-8 text-[14px] font-medium text-inkblack/60 md:flex">
+            <a href="#captura" className="transition-colors hover:text-inkblack">Cómo funciona</a>
+            <a href="#proceso" className="transition-colors hover:text-inkblack">Proceso</a>
+            <a href="#precios" className="transition-colors hover:text-inkblack">Precios</a>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="rounded-[10px] px-3.5 py-2 text-[13.5px] font-medium text-ink-600 transition-colors hover:bg-ink-50 hover:text-ink-950"
+              className="hidden rounded-lg px-3.5 py-2 text-[14px] font-medium text-inkblack/60 transition-colors hover:text-inkblack sm:block"
             >
               Iniciar sesión
             </Link>
             <Link
-              href="/register"
-              className="rounded-[10px] bg-ink-950 px-4 py-2 text-[13.5px] font-medium text-white shadow-raised transition hover:bg-ink-800"
+              href="/demo"
+              className="rounded-lg bg-inkblack px-4 py-2.5 text-[13.5px] font-bold text-white transition-all hover:bg-inkblack/85"
             >
-              Crear cuenta
+              Ver la demo
             </Link>
           </div>
         </nav>
       </header>
 
       {/* ————— Hero ————— */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-hero-glow" />
-        <div className="absolute inset-x-0 top-0 h-[420px] bg-dots opacity-[0.35] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-        <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-16 text-center sm:pt-24">
-          <span className="mx-auto flex w-fit items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1.5 text-xs font-semibold text-ink-600 shadow-card animate-fade-up">
-            <span className="flex size-4 items-center justify-center rounded-full bg-brand-600 text-[9px] font-bold text-white">S</span>
-            Un producto de Synapse
-          </span>
-          <h1 className="mx-auto mt-6 max-w-3xl text-balance text-[38px] font-semibold leading-[1.08] tracking-tight sm:text-[54px] animate-fade-up">
-            La base de datos inteligente de los clientes de tu comercio
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-balance text-[16px] leading-relaxed text-ink-500 animate-fade-up">
-            Un QR en tu local convierte cada visita en un cliente conocido: quién es, qué consume y
-            cuándo vuelve. Datos reales para hacer campañas que traen gente de vuelta.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 animate-fade-up">
-            <Link
-              href="/register"
-              className="group flex h-12 items-center gap-2 rounded-2xl bg-ink-950 px-6 text-[15px] font-semibold text-white shadow-pop transition-all hover:scale-[1.02] hover:bg-ink-800"
+      <section className="relative overflow-hidden px-6 pb-16 pt-20 sm:pt-28">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="rv font-display text-[13px] font-bold tracking-tight text-coral">
+              Un producto de synapse<span className="text-coral">.</span>
+            </p>
+            <h1
+              className="rv display-title mx-auto mt-6 max-w-[16ch] text-[42px] sm:text-[64px]"
+              style={{ ["--rv-delay" as string]: "80ms" }}
             >
-              Empezar gratis
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/demo"
-              className="flex h-12 items-center gap-2 rounded-2xl border border-line-strong bg-white px-6 text-[15px] font-semibold text-ink-700 shadow-card transition-all hover:border-ink-300 hover:bg-ink-50"
+              La base de datos de tus clientes se arma sola
+            </h1>
+            <p
+              className="rv body-copy mx-auto mt-7 max-w-[52ch] text-[17px] text-inkblack/60"
+              style={{ ["--rv-delay" as string]: "160ms" }}
             >
-              <Sparkles className="size-4 text-brand-600" />
-              Ver la demo
-            </Link>
-          </div>
-          <p className="mt-4 text-xs text-ink-400 animate-fade-up">
-            Sin tarjeta · Tu QR listo en 2 minutos
-          </p>
-
-          {/* Mock del dashboard */}
-          <div className="reveal relative mx-auto mt-14 max-w-4xl">
-            <div className="absolute -inset-6 rounded-[36px] bg-gradient-to-b from-brand-100/60 to-transparent blur-2xl" />
-            <DashboardMock />
-          </div>
-        </div>
-      </section>
-
-      {/* ————— Cómo funciona ————— */}
-      <section id="como-funciona" className="border-t border-line bg-canvas py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="reveal text-center">
-            <p className="text-[12px] font-bold uppercase tracking-widest text-brand-600">Cómo funciona</p>
-            <h2 className="mx-auto mt-3 max-w-xl text-balance text-[30px] font-semibold leading-tight tracking-tight">
-              El descuento es el gancho. La información es el negocio.
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {[
-              {
-                icon: QrCode,
-                step: "01",
-                title: "Ponés el QR en tu local",
-                text: "“Escaneá y obtené un 10% de descuento”. Lo imprimís desde el panel con tu marca, en PNG, SVG o PDF.",
-              },
-              {
-                icon: ClipboardList,
-                step: "02",
-                title: "El cliente completa 30 segundos",
-                text: "Nombre, qué consumió, contacto y las preguntas que vos definas. Una experiencia rápida, linda y mobile.",
-              },
-              {
-                icon: Database,
-                step: "03",
-                title: "Tu base de datos se arma sola",
-                text: "Cada respuesta se convierte en una ficha viva: visitas, frecuencia, favoritos, gasto. Lista para segmentar.",
-              },
-            ].map((s) => (
-              <div key={s.step} className="reveal card card-hover relative overflow-hidden p-7">
-                <span className="absolute -right-2 -top-4 text-[64px] font-bold tracking-tight text-ink-100">{s.step}</span>
-                <span className="relative flex size-11 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-raised">
-                  <s.icon className="size-5" strokeWidth={1.75} />
-                </span>
-                <h3 className="relative mt-5 text-[17px] font-semibold tracking-tight">{s.title}</h3>
-                <p className="relative mt-2 text-[13.5px] leading-relaxed text-ink-500">{s.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ————— Features ————— */}
-      <section id="producto" className="py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="reveal text-center">
-            <p className="text-[12px] font-bold uppercase tracking-widest text-brand-600">El producto</p>
-            <h2 className="mx-auto mt-3 max-w-2xl text-balance text-[30px] font-semibold leading-tight tracking-tight">
-              No es otro CRM. Es entender por fin a tus clientes.
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-ink-500">
-              Todo lo que capturás se transforma en respuestas concretas: quiénes son tus mejores
-              clientes, qué consumen, cuándo vienen y a quién invitar a volver.
+              Un QR en tu local convierte cada visita en un cliente conocido: quién es, qué consume
+              y cuándo vuelve. Sin planillas. Sin adivinar.
+            </p>
+            <div
+              className="rv mt-9 flex flex-wrap items-center justify-center gap-3"
+              style={{ ["--rv-delay" as string]: "240ms" }}
+            >
+              <Link
+                href="/demo"
+                className="group flex h-12 items-center gap-2 rounded-xl bg-coral px-6 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
+              >
+                Ver la demo
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/register"
+                className="flex h-12 items-center rounded-xl border border-inkblack/15 bg-white px-6 text-[15px] font-bold text-inkblack transition-all hover:border-inkblack/30"
+              >
+                Crear mi cuenta
+              </Link>
+            </div>
+            <p className="rv mt-5 text-[13px] text-inkblack/40" style={{ ["--rv-delay" as string]: "320ms" }}>
+              Sin tarjeta · Tu QR listo en dos minutos
             </p>
           </div>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { icon: Users, title: "Fichas de cliente completas", text: "Historial de visitas, producto favorito, frecuencia, gasto total, notas y etiquetas. Todo automático." },
-              { icon: Target, title: "Segmentos inteligentes", text: "“Frecuentes”, “hace 30 días que no vienen”, “consumieron cerveza”, “gastaron más de $40.000”. En dos clics." },
-              { icon: MessageCircle, title: "Campañas de retorno", text: "Mensajes por WhatsApp o email con variables: “Hola Juan, volvió tu hamburguesa favorita”." },
-              { icon: BarChart3, title: "Estadísticas profundas", text: "Retorno, horarios pico, demografía, rankings de clientes y productos. Todo exportable." },
-              { icon: ClipboardList, title: "Formularios a tu medida", text: "Constructor visual con drag & drop, 7 tipos de pregunta, tu color y tu logo. Vista previa en vivo." },
-              { icon: ScanLine, title: "QR con tu marca", text: "Descargalo en PNG, SVG o PDF imprimible, medí escaneos y conversión a registros." },
-            ].map((f) => (
-              <div key={f.title} className="reveal card card-hover p-6">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-50">
-                  <f.icon className="size-4.5 text-brand-600" strokeWidth={1.75} />
-                </span>
-                <h3 className="mt-4 text-[15.5px] font-semibold tracking-tight">{f.title}</h3>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-500">{f.text}</p>
-              </div>
-            ))}
+
+          <div className="rv rv-scale mx-auto mt-16 max-w-4xl" style={{ ["--rv-delay" as string]: "180ms" }}>
+            <HeroMock />
           </div>
         </div>
       </section>
 
-      {/* ————— Banda de campañas ————— */}
-      <section className="relative overflow-hidden bg-ink-950 py-20 text-white">
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            background:
-              "radial-gradient(700px 400px at 15% 0%, rgb(91 91 214 / 0.5), transparent 60%), radial-gradient(700px 400px at 90% 100%, rgb(74 72 181 / 0.45), transparent 60%)",
-          }}
+      {/* ————— Tesis ————— */}
+      <section className="border-t border-inkblack/8 px-6 py-20 sm:py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="rv display-title text-[32px] sm:text-[40px]">
+            El descuento es el gancho.
+            <br />
+            La información es el negocio.
+          </h2>
+          <p className="rv body-copy mx-auto mt-6 max-w-[54ch] text-[16px] text-inkblack/60" style={{ ["--rv-delay" as string]: "100ms" }}>
+            Cientos de personas pasan por tu local todos los meses y no sabés nada de ellas. Quién
+            volvió, quién no vino más, qué pide cada uno. SynapBase convierte ese anonimato en datos
+            que podés usar.
+          </p>
+        </div>
+      </section>
+
+      {/* ————— Secciones numeradas ————— */}
+      <div id="captura">
+        <FeatureSection
+          n="01"
+          eyebrow="Captura"
+          title={<>Cada visita, un cliente con nombre</>}
+          items={[
+            "Un QR con tu marca, listo para imprimir en PNG, SVG o PDF",
+            "El cliente responde en treinta segundos desde su celular",
+            "Vos definís las preguntas: consumo, contacto, lo que necesites",
+          ]}
+          mock={<CaptureMock />}
         />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 lg:grid-cols-2">
-          <div className="reveal">
-            <p className="text-[12px] font-bold uppercase tracking-widest text-brand-300">Fidelización real</p>
-            <h2 className="mt-3 max-w-md text-balance text-[30px] font-semibold leading-tight tracking-tight">
-              Mensajes que suenan a tu comercio, no a spam
-            </h2>
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/60">
-              Como sabés qué consume cada persona y cuándo fue su última visita, cada mensaje llega en el
-              momento justo con el contenido justo. Eso es lo que hace que vuelvan.
-            </p>
-            <ul className="mt-6 space-y-2.5">
-              {["Variables personalizadas por cliente", "Audiencia calculada al instante", "Borradores, programación e historial"].map((t) => (
-                <li key={t} className="flex items-center gap-2.5 text-[14px] text-white/80">
-                  <Check className="size-4 text-emerald-400" />
-                  {t}
-                </li>
-              ))}
-            </ul>
+      </div>
+
+      <FeatureSection
+        n="02"
+        eyebrow="Datos"
+        title={<>Sabés qué consume y cuándo vuelve</>}
+        items={[
+          "Visitas, frecuencia, producto favorito y gasto total, automáticos",
+          "Segmentos por comportamiento real, no por corazonada",
+          "Todo exportable a Excel, CSV o PDF cuando lo necesites",
+        ]}
+        mock={<ProfileMock />}
+        flip
+      />
+
+      <FeatureSection
+        n="03"
+        eyebrow="Retorno"
+        title={<>Mensajes que traen gente de vuelta</>}
+        items={[
+          "WhatsApp y email con el nombre y el gusto de cada cliente",
+          "Audiencia calculada al instante antes de enviar",
+          "Borradores, programación e historial de cada campaña",
+        ]}
+        mock={<CampaignMock />}
+      />
+
+      {/* ————— Proceso: motivo de numerales ————— */}
+      <section id="proceso" className="border-t border-inkblack/8 px-6 py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="rv display-title text-center text-[32px] sm:text-[40px]">Cómo empezás</h2>
+          <div className="mt-14 grid gap-x-14 gap-y-12 sm:grid-cols-2">
+            {[
+              ["01", "Creás tu cuenta", "Cargás el nombre de tu comercio y ya tenés tu panel con un formulario listo."],
+              ["02", "Personalizás las preguntas", "Definís qué querés saber de tus clientes y con qué beneficio los invitás."],
+              ["03", "Imprimís el QR", "Lo ponés en mesas, mostrador o vidriera. Desde ahí empieza a llenarse la base."],
+              ["04", "Hacés que vuelvan", "Segmentás por comportamiento y mandás campañas que se sienten personales."],
+            ].map(([n, title, text], i) => (
+              <div
+                key={n}
+                className="rv border-t border-inkblack/10 pt-8"
+                style={{ ["--rv-delay" as string]: `${i * 90}ms` }}
+              >
+                <p className="numeral text-[52px] leading-none">{n}</p>
+                <h3 className="font-display mt-4 text-[21px] font-bold tracking-tight text-inkblack">{title}</h3>
+                <p className="body-copy mt-2.5 max-w-[38ch] text-[15px] text-inkblack/60">{text}</p>
+              </div>
+            ))}
           </div>
-          <div className="reveal space-y-3">
-            <div className="ml-auto w-fit max-w-sm rounded-2xl rounded-tr-md bg-[#DCF8C6] px-4 py-3 text-[14px] leading-relaxed text-ink-950 shadow-pop">
-              Hola <strong>Juan</strong> 👋 ¡Volvió tu <strong>hamburguesa doble favorita</strong>! Esta semana,
-              2x1 mostrando este mensaje 🍔
-            </div>
-            <div className="w-fit max-w-sm rounded-2xl rounded-tl-md bg-white/10 px-4 py-3 text-[14px] leading-relaxed text-white backdrop-blur">
-              <strong>María</strong>, hace 40 días que no venís… tenés un 15% esperándote esta semana ❤️
-            </div>
-            <div className="ml-auto w-fit max-w-sm rounded-2xl rounded-tr-md bg-[#DCF8C6] px-4 py-3 text-[14px] leading-relaxed text-ink-950 shadow-pop">
-              <strong>Sofi</strong>, tu flat white de siempre te espera. Hoy la medialuna va de regalo ☕🥐
-            </div>
+        </div>
+      </section>
+
+      {/* ————— Franja oscura ————— */}
+      <section className="bg-inkblack px-6 py-20 text-white sm:py-28">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div className="rv rv-left">
+            <p className="font-display text-[13px] font-bold tracking-tight text-coral">
+              04 — Fidelización
+            </p>
+            <h2 className="display-title mt-4 max-w-[14ch] text-[34px] text-white sm:text-[42px]">
+              No es otro CRM. Es entender a tu gente.
+            </h2>
+            <p className="body-copy mt-6 max-w-[46ch] text-[16px] text-white/55">
+              Un comercio no paga por un generador de formularios. Paga porque le respondés quiénes
+              son sus mejores clientes, por qué dejan de venir y a quién escribirle esta semana.
+            </p>
+          </div>
+          <div className="rv rv-right space-y-3" style={{ ["--rv-delay" as string]: "120ms" }}>
+            {[
+              ["Quiénes son tus mejores clientes", "Ranking por visitas y por gasto real"],
+              ["Por qué dejan de venir", "Clientes perdidos y recuperados, mes a mes"],
+              ["A quién le escribís esta semana", "Segmentos listos para convertir en campaña"],
+            ].map(([title, text], i) => (
+              <div
+                key={title}
+                className="rounded-xl border border-white/12 bg-white/[0.04] px-5 py-4 backdrop-blur"
+                style={{ ["--rv-delay" as string]: `${140 + i * 80}ms` }}
+              >
+                <p className="font-display text-[15px] font-bold text-white">{title}</p>
+                <p className="mt-1 text-[13.5px] text-white/50">{text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ————— Precios ————— */}
-      <section id="precios" className="bg-canvas py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="reveal text-center">
-            <p className="text-[12px] font-bold uppercase tracking-widest text-brand-600">Precios</p>
-            <h2 className="mt-3 text-balance text-[30px] font-semibold leading-tight tracking-tight">
-              Empezá gratis, crecé cuando lo veas funcionar
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+      <section id="precios" className="border-t border-inkblack/8 px-6 py-20 sm:py-28">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="rv display-title text-center text-[32px] sm:text-[40px]">
+            Empezá gratis. Crecé cuando lo veas funcionar.
+          </h2>
+          <div className="mt-14 grid gap-6 lg:grid-cols-3">
             {[
               {
                 name: "Free",
@@ -248,38 +300,45 @@ export default function LandingPage() {
                 name: "Business",
                 price: "$59.900",
                 period: "por mes",
-                features: ["Todo lo de Pro", "Múltiples sucursales", "Roles y permisos avanzados", "Soporte prioritario"],
+                features: ["Todo lo de Pro", "Múltiples sucursales", "Roles y permisos", "Soporte prioritario"],
                 cta: "Hablar con ventas",
               },
-            ].map((p) => (
+            ].map((p, i) => (
               <div
                 key={p.name}
-                className={`reveal card relative flex flex-col p-7 ${p.highlight ? "border-brand-300 shadow-pop lg:-translate-y-2" : ""}`}
+                className={`rv flex flex-col rounded-2xl border p-8 ${
+                  p.highlight ? "border-coral bg-white" : "border-inkblack/12 bg-white"
+                }`}
+                style={{ ["--rv-delay" as string]: `${i * 100}ms` }}
               >
-                {p.highlight && (
-                  <span className="absolute -top-3 left-7 rounded-full bg-brand-600 px-3 py-1 text-[10.5px] font-bold uppercase tracking-wide text-white shadow-raised">
-                    Más elegido
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-[16px] font-bold text-inkblack">{p.name}</h3>
+                  {p.highlight && (
+                    <span className="rounded-full bg-coral px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                      Más elegido
+                    </span>
+                  )}
+                </div>
+                <p className="mt-5">
+                  <span className="font-display text-[38px] font-extrabold tracking-tight text-inkblack">
+                    {p.price}
                   </span>
-                )}
-                <h3 className="text-[15px] font-semibold">{p.name}</h3>
-                <p className="mt-3">
-                  <span className="text-[34px] font-semibold tracking-tight">{p.price}</span>
-                  <span className="ml-2 text-[13px] text-ink-400">{p.period}</span>
+                  <span className="ml-2 text-[13px] text-inkblack/45">{p.period}</span>
                 </p>
-                <ul className="mt-5 flex-1 space-y-2.5">
+                <ul className="mt-7 flex-1 space-y-3">
                   {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-[13.5px] text-ink-600">
-                      <Check className="mt-0.5 size-4 shrink-0 text-success-600" />
-                      {f}
+                    <li key={f} className="flex items-start gap-2.5">
+                      <Check className="mt-0.5 size-4 shrink-0 text-coral" strokeWidth={3} />
+                      <span className="body-copy text-[14px] text-inkblack/70">{f}</span>
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/register"
-                  className={`mt-7 flex h-11 items-center justify-center rounded-xl text-[14px] font-semibold transition-all ${
+                  className={`mt-8 flex h-12 items-center justify-center rounded-xl text-[14.5px] font-bold transition-all ${
                     p.highlight
-                      ? "bg-brand-600 text-white shadow-raised hover:bg-brand-700"
-                      : "border border-line-strong bg-white text-ink-800 hover:bg-ink-50"
+                      ? "bg-coral text-white hover:bg-coral-600"
+                      : "border border-inkblack/15 text-inkblack hover:border-inkblack/35"
                   }`}
                 >
                   {p.cta}
@@ -290,132 +349,46 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ————— CTA final ————— */}
-      <section className="py-20">
-        <div className="reveal mx-auto max-w-3xl px-5 text-center">
-          <LogoMark size={44} className="mx-auto" />
-          <h2 className="mt-6 text-balance text-[32px] font-semibold leading-tight tracking-tight">
-            Tus clientes ya están entrando por la puerta.
-            <br className="hidden sm:block" />
-            Empezá a conocerlos hoy.
+      {/* ————— Cierre ————— */}
+      <section className="border-t border-inkblack/8 px-6 py-24 sm:py-32">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="rv display-title text-[36px] sm:text-[48px]">
+            Tus clientes ya entran por la puerta.
+            <br />
+            Empezá a conocerlos.
           </h2>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="rv mt-10 flex flex-wrap items-center justify-center gap-3" style={{ ["--rv-delay" as string]: "100ms" }}>
+            <Link
+              href="/demo"
+              className="group flex h-12 items-center gap-2 rounded-xl bg-coral px-7 text-[15px] font-bold text-white transition-all hover:bg-coral-600"
+            >
+              Ver la demo
+              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
             <Link
               href="/register"
-              className="group flex h-12 items-center gap-2 rounded-2xl bg-ink-950 px-7 text-[15px] font-semibold text-white shadow-pop transition-all hover:scale-[1.02] hover:bg-ink-800"
+              className="flex h-12 items-center rounded-xl border border-inkblack/15 bg-white px-7 text-[15px] font-bold text-inkblack transition-all hover:border-inkblack/30"
             >
-              Crear mi QR gratis
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+              Crear mi cuenta
             </Link>
           </div>
         </div>
       </section>
 
       {/* ————— Footer ————— */}
-      <footer className="border-t border-line bg-canvas">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8">
-          <div className="flex items-center gap-2.5">
-            <Logo />
-          </div>
-          <p className="text-[12.5px] text-ink-400">
-            © {new Date().getFullYear()} Synapse · SynapBase — La base de datos inteligente para comercios
+      <footer className="border-t border-inkblack/8 px-6 py-10">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+          <Wordmark className="text-[16px]" />
+          <p className="text-[12.5px] text-inkblack/40">
+            © {new Date().getFullYear()} Synapse · La base de datos inteligente para comercios
           </p>
-          <div className="flex items-center gap-5 text-[12.5px] font-medium text-ink-500">
-            <Link href="/login" className="transition-colors hover:text-ink-900">Iniciar sesión</Link>
-            <Link href="/register" className="transition-colors hover:text-ink-900">Crear cuenta</Link>
+          <div className="flex items-center gap-6 text-[13px] font-medium text-inkblack/50">
+            <Link href="/demo" className="transition-colors hover:text-inkblack">Demo</Link>
+            <Link href="/login" className="transition-colors hover:text-inkblack">Iniciar sesión</Link>
+            <Link href="/register" className="transition-colors hover:text-inkblack">Crear cuenta</Link>
           </div>
         </div>
       </footer>
-    </div>
-  );
-}
-
-/* ————— Mock estilizado del dashboard ————— */
-
-function DashboardMock() {
-  const bars = [34, 48, 40, 62, 55, 74, 68, 88, 80, 96, 90, 100];
-  return (
-    <div className="relative overflow-hidden rounded-[24px] border border-line bg-white text-left shadow-modal">
-      {/* Barra de ventana */}
-      <div className="flex items-center gap-1.5 border-b border-line bg-ink-50/70 px-4 py-2.5">
-        <span className="size-2.5 rounded-full bg-[#f6564f]" />
-        <span className="size-2.5 rounded-full bg-[#f5b800]" />
-        <span className="size-2.5 rounded-full bg-[#33c748]" />
-        <span className="ml-3 flex items-center gap-1.5 rounded-md bg-white px-2.5 py-1 text-[10px] text-ink-400 shadow-card">
-          <span className="size-2 rounded-full bg-success-600/70" />
-          app.synapbase.com — Café Martina
-        </span>
-      </div>
-      <div className="grid grid-cols-[150px_1fr] max-sm:grid-cols-1">
-        {/* Sidebar */}
-        <div className="hidden border-r border-line bg-canvas p-3.5 sm:block">
-          <div className="flex items-center gap-1.5 px-1">
-            <LogoMark size={18} />
-            <span className="text-[11px] font-bold">SynapBase</span>
-          </div>
-          <div className="mt-4 space-y-1">
-            {["Panel", "Clientes", "Base de datos", "Formularios", "Segmentos", "Campañas", "Estadísticas"].map((item, i) => (
-              <div
-                key={item}
-                className={`rounded-md px-2 py-1.5 text-[10.5px] font-medium ${
-                  i === 0 ? "bg-white text-ink-950 shadow-card" : "text-ink-400"
-                }`}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Contenido */}
-        <div className="p-5">
-          <p className="text-[13px] font-semibold">Hola, Martina 👋</p>
-          <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {[
-              ["Clientes", "1.248", Users],
-              ["Nuevos este mes", "+86", TrendingUp],
-              ["Tasa de retorno", "58%", Target],
-              ["Escaneos", "3.402", ScanLine],
-            ].map(([label, value, Icon]) => {
-              const I = Icon as React.ElementType;
-              return (
-                <div key={String(label)} className="rounded-xl border border-line bg-white p-2.5 shadow-card">
-                  <I className="size-3 text-brand-600" />
-                  <p className="tabular mt-1.5 text-[15px] font-semibold leading-none">{String(value)}</p>
-                  <p className="mt-1 text-[9px] font-medium text-ink-400">{String(label)}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2.5">
-            <div className="col-span-2 rounded-xl border border-line bg-white p-3 shadow-card">
-              <p className="text-[10px] font-semibold text-ink-700">Clientes por mes</p>
-              <div className="mt-2 flex h-[92px] items-end gap-1.5">
-                {bars.map((h, i) => (
-                  <div key={i} className="flex-1 rounded-t-[3px] bg-gradient-to-t from-brand-600 to-brand-400" style={{ height: `${h}%`, opacity: 0.55 + (i / bars.length) * 0.45 }} />
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-line bg-white p-3 shadow-card">
-              <p className="text-[10px] font-semibold text-ink-700">Últimos registros</p>
-              <div className="mt-2 space-y-1.5">
-                {[
-                  ["JP", "Juan · Hamburguesa"],
-                  ["SL", "Sofía · Flat white"],
-                  ["MR", "Martín · Cerveza IPA"],
-                  ["CA", "Camila · Avo toast"],
-                ].map(([ini, text]) => (
-                  <div key={text} className="flex items-center gap-1.5">
-                    <span className="flex size-4.5 items-center justify-center rounded-full bg-brand-100 text-[7px] font-bold text-brand-800">
-                      {ini}
-                    </span>
-                    <span className="truncate text-[9px] text-ink-500">{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

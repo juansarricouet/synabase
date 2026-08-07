@@ -74,7 +74,7 @@ export default function LandingPage() {
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
-              href="/login"
+              href="/demo"
               className="flex h-12 items-center gap-2 rounded-2xl border border-line-strong bg-white px-6 text-[15px] font-semibold text-ink-700 shadow-card transition-all hover:border-ink-300 hover:bg-ink-50"
             >
               <Sparkles className="size-4 text-brand-600" />

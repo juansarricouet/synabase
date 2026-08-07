@@ -36,7 +36,7 @@ const FILTERS: { value: QuickFilter; label: string }[] = [
 
 const PAGE_SIZE = 25;
 
-export function CustomersTable({ rows }: { rows: CustomerRow[] }) {
+export function CustomersTable({ rows, basePath = "/app" }: { rows: CustomerRow[]; basePath?: string }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<QuickFilter>("todos");
@@ -168,7 +168,7 @@ export function CustomersTable({ rows }: { rows: CustomerRow[] }) {
                 return (
                   <tr
                     key={r.id}
-                    onClick={() => router.push(`/app/clientes/${r.id}`)}
+                    onClick={() => router.push(`${basePath}/clientes/${r.id}`)}
                     className="group cursor-pointer border-b border-line/70 transition-colors last:border-0 hover:bg-brand-50/40"
                   >
                     <td className="px-4 py-3">
@@ -187,7 +187,7 @@ export function CustomersTable({ rows }: { rows: CustomerRow[] }) {
                       <p className="truncate text-xs text-ink-400">{r.email ?? ""}</p>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
-                      <span className={cn("text-[13px]", inactive ? "text-warning-600" : "text-ink-700")}>
+                      <span suppressHydrationWarning className={cn("text-[13px]", inactive ? "text-warning-600" : "text-ink-700")}>
                         {timeAgo(r.last_visit_at)}
                       </span>
                     </td>

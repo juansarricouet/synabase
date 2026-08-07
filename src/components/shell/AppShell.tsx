@@ -26,15 +26,15 @@ import { Avatar } from "@/components/ui/misc";
 import type { Business, Role } from "@/lib/types";
 import type { SessionUser } from "@/server/auth";
 
-const NAV = [
-  { href: "/app", label: "Panel", icon: LayoutDashboard, exact: true },
-  { href: "/app/clientes", label: "Clientes", icon: Users },
-  { href: "/app/base", label: "Base de datos", icon: Database },
-  { href: "/app/formularios", label: "Formularios y QR", icon: ClipboardList },
-  { href: "/app/segmentos", label: "Segmentos", icon: Target },
-  { href: "/app/campanas", label: "Campañas", icon: Send },
-  { href: "/app/estadisticas", label: "Estadísticas", icon: BarChart3 },
-  { href: "/app/ajustes", label: "Ajustes", icon: Settings },
+const navItems = (base: string) => [
+  { href: base, label: "Panel", icon: LayoutDashboard, exact: true },
+  { href: `${base}/clientes`, label: "Clientes", icon: Users },
+  { href: `${base}/base`, label: "Base de datos", icon: Database },
+  { href: `${base}/formularios`, label: "Formularios y QR", icon: ClipboardList },
+  { href: `${base}/segmentos`, label: "Segmentos", icon: Target },
+  { href: `${base}/campanas`, label: "Campañas", icon: Send },
+  { href: `${base}/estadisticas`, label: "Estadísticas", icon: BarChart3 },
+  { href: `${base}/ajustes`, label: "Ajustes", icon: Settings },
 ];
 
 const PLAN_LABELS: Record<string, string> = { free: "Plan Free", pro: "Plan Pro", business: "Plan Business" };
@@ -46,9 +46,12 @@ interface Props {
   memberships: { business_id: string; business_name: string; role: Role }[];
   mainFormSlug: string | null;
   children: React.ReactNode;
+  /** Panel de demostración público: sin sesión, navegación bajo /demo. */
+  demo?: boolean;
 }
 
-export function AppShell({ user, business, role, memberships, mainFormSlug, children }: Props) {
+export function AppShell({ user, business, role, memberships, mainFormSlug, children, demo = false }: Props) {
+  const basePath = demo ? "/demo" : "/app";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const pathname = usePathname();
@@ -69,7 +72,7 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between px-5 pb-2 pt-5">
-        <Link href="/app">
+        <Link href={basePath}>
           <Logo />
         </Link>
         <button className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 lg:hidden" onClick={() => setMobileOpen(false)}>
@@ -80,7 +83,7 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
       {/* Selector de comercio */}
       <div className="relative px-3.5 pt-3">
         <button
-          onClick={() => setSwitcherOpen((v) => !v)}
+          onClick={() => !demo && setSwitcherOpen((v) => !v)}
           className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-white px-3 py-2.5 text-left shadow-card transition hover:border-ink-300"
         >
           {business.logo_url ? (
@@ -98,9 +101,9 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
             <span className="block truncate text-[13px] font-semibold text-ink-950">{business.name}</span>
             <span className="block text-[11px] text-ink-400">{PLAN_LABELS[business.plan] ?? business.plan}</span>
           </span>
-          <ChevronsUpDown className="size-3.5 shrink-0 text-ink-400" />
+          {!demo && <ChevronsUpDown className="size-3.5 shrink-0 text-ink-400" />}
         </button>
-        {switcherOpen && (
+        {switcherOpen && !demo && (
           <div className="absolute inset-x-3.5 z-30 mt-1.5 overflow-hidden rounded-xl border border-line bg-white p-1 shadow-pop animate-scale-in">
             {memberships.map((m) => (
               <button
@@ -120,7 +123,7 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
       </div>
 
       <nav className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3.5">
-        {NAV.map((item) => {
+        {navItems(basePath).map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
@@ -167,16 +170,18 @@ export function AppShell({ user, business, role, memberships, mainFormSlug, chil
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-medium text-ink-900">{user.name}</span>
             <span className="block truncate text-[11px] text-ink-400">
-              {role === "owner" ? "Propietario" : role === "admin" ? "Administrador" : "Miembro"}
+              {demo ? "Cuenta de ejemplo" : role === "owner" ? "Propietario" : role === "admin" ? "Administrador" : "Miembro"}
             </span>
           </span>
-          <button
-            onClick={logout}
-            title="Cerrar sesión"
-            className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-          >
-            <LogOut className="size-4" />
-          </button>
+          {!demo && (
+            <button
+              onClick={logout}
+              title="Cerrar sesión"
+              className="rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+            >
+              <LogOut className="size-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

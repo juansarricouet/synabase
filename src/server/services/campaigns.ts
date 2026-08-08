@@ -1,5 +1,5 @@
 import "server-only";
-import { nowIso, one, rows, run, tx, uid } from "../db";
+import { nowIso, num, one, rows, run, tx, uid } from "../db";
 import { ApiError } from "../http";
 import { log } from "../log";
 import { evaluateRules, getSegment } from "./segments";
@@ -23,6 +23,28 @@ function rowToCampaign(r: Record<string, unknown>): Campaign {
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
   };
+}
+
+/**
+ * Mensajes de WhatsApp que el comercio ya gastó en el mes en curso.
+ *
+ * Se cuentan los destinatarios materializados, no las campañas: lo que factura
+ * el proveedor es cada mensaje entregado. Las fechas se guardan como texto ISO,
+ * que ordena igual que cronológicamente, así que alcanza con comparar el
+ * prefijo "AAAA-MM" contra el mes actual.
+ */
+export async function whatsappSentThisMonth(businessId: string): Promise<number> {
+  const monthPrefix = nowIso().slice(0, 7);
+  const row = await one<{ total: string | number }>(
+    `SELECT COUNT(*) AS total
+       FROM campaign_recipients r
+       JOIN campaigns c ON c.id = r.campaign_id
+      WHERE c.business_id = $1
+        AND c.channel = 'whatsapp'
+        AND r.sent_at LIKE $2`,
+    [businessId, `${monthPrefix}%`],
+  );
+  return num(row?.total ?? 0);
 }
 
 export async function listCampaigns(businessId: string): Promise<Campaign[]> {

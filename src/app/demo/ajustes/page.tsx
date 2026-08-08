@@ -1,4 +1,4 @@
-import { demoForms, demoSubmissions, demoTotalCustomers, getDemoBusiness, getDemoUserName } from "@/server/demo-data";
+import { demoForms, demoSubmissions, demoTotalCustomers, demoWhatsappThisMonth, getDemoBusiness, getDemoUserName } from "@/server/demo-data";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { SettingsView } from "@/app/app/ajustes/SettingsView";
 
@@ -20,6 +20,7 @@ export default function DemoSettingsPage() {
           customers: demoTotalCustomers(),
           forms: demoForms().filter((f) => !f.is_template).length,
           submissions: demoSubmissions().length,
+          whatsappThisMonth: demoWhatsappThisMonth(),
         }}
       />
     </div>

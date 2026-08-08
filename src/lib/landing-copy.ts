@@ -6,15 +6,11 @@
  * se pre-renderiza entera y Google puede indexar las dos.
  */
 
-export type Lang = "es" | "en";
+import { PLANS, USD_RATE } from "@/lib/plans";
 
-/**
- * Pesos por dólar, para mostrar los planes en la versión en inglés.
- *
- * ⚠️ Se actualiza a mano. Es a propósito: un precio de venta no debería
- * moverse solo con el tipo de cambio del día. Revisalo cuando ajustes precios.
- */
-export const USD_RATE = 1200;
+const WA = PLANS.business.whatsappIncluded.toLocaleString("es-AR");
+
+export type Lang = "es" | "en";
 
 /** Redondea a la decena de dólares más cercana, para no publicar "USD 37,50". */
 function toUsd(ars: number): number {
@@ -88,14 +84,14 @@ interface Copy {
 
 const PLANS_ES: Plan[] = [
   {
-    name: "Free",
-    ars: 0,
+    name: PLANS.free.name,
+    ars: PLANS.free.ars,
     features: ["1 formulario con QR", "Hasta 100 clientes", "Panel y métricas básicas"],
     cta: "Crear cuenta",
   },
   {
-    name: "Pro",
-    ars: 45000,
+    name: PLANS.pro.name,
+    ars: PLANS.pro.ars,
     features: [
       "Formularios y clientes ilimitados",
       "Segmentos y campañas por email",
@@ -106,11 +102,11 @@ const PLANS_ES: Plan[] = [
     highlight: true,
   },
   {
-    name: "Business",
-    ars: 90000,
+    name: PLANS.business.name,
+    ars: PLANS.business.ars,
     features: [
       "Todo lo de Pro",
-      "Campañas por WhatsApp",
+      `Campañas por WhatsApp: ${WA} mensajes por mes`,
       "Múltiples sucursales",
       "Roles, permisos y soporte prioritario",
     ],
@@ -120,14 +116,14 @@ const PLANS_ES: Plan[] = [
 
 const PLANS_EN: Plan[] = [
   {
-    name: "Free",
-    ars: 0,
+    name: PLANS.free.name,
+    ars: PLANS.free.ars,
     features: ["1 form with QR code", "Up to 100 customers", "Dashboard and basic metrics"],
     cta: "Create account",
   },
   {
-    name: "Pro",
-    ars: 45000,
+    name: PLANS.pro.name,
+    ars: PLANS.pro.ars,
     features: [
       "Unlimited forms and customers",
       "Segments and email campaigns",
@@ -138,11 +134,11 @@ const PLANS_EN: Plan[] = [
     highlight: true,
   },
   {
-    name: "Business",
-    ars: 90000,
+    name: PLANS.business.name,
+    ars: PLANS.business.ars,
     features: [
       "Everything in Pro",
-      "WhatsApp campaigns",
+      `WhatsApp campaigns: ${WA} messages per month`,
       "Multiple locations",
       "Roles, permissions and priority support",
     ],

@@ -21,8 +21,9 @@ import { ConfirmModal, Modal } from "@/components/ui/Modal";
 import { EmptyState } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/client";
-import { cn, formatDateTime, formatNumber, timeAgo } from "@/lib/utils";
+import { cn, formatDateTime, formatMoney, formatNumber, timeAgo } from "@/lib/utils";
 import type { Campaign, CampaignChannel, Segment } from "@/lib/types";
+import { messageUsage, planOf } from "@/lib/plans";
 import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 const VARIABLES = [
@@ -49,10 +50,15 @@ export function CampaignsView({
   campaigns,
   segments,
   presetSegmentId,
+  whatsappUsed = 0,
+  planId = "free",
 }: {
   campaigns: Campaign[];
   segments: Segment[];
   presetSegmentId: string | null;
+  /** Mensajes de WhatsApp ya gastados este mes. */
+  whatsappUsed?: number;
+  planId?: string;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -72,6 +78,20 @@ export function CampaignsView({
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<Campaign | null>(null);
   const [toSend, setToSend] = useState<Campaign | null>(null);
+
+  /* Cuánta gente recibiría la campaña del modal.
+     `audience_count` recién se llena al enviar, así que en un borrador vale 0:
+     para el aviso previo hay que mirar cuánta gente tiene el segmento hoy. */
+  const sendAudience = toSend
+    ? toSend.audience_count || segments.find((s) => s.id === toSend.segment_id)?.count || 0
+    : 0;
+
+  /* Cómo quedaría el cupo del mes si se enviara. Sólo aplica a WhatsApp: el
+     email no tiene tope. */
+  const sendQuota =
+    toSend && toSend.channel === "whatsapp" && planOf(planId).whatsappIncluded > 0
+      ? messageUsage(whatsappUsed + sendAudience, planId)
+      : null;
 
   /* Audiencia en vivo según segmento + canal */
   useEffect(() => {
@@ -464,8 +484,33 @@ export function CampaignsView({
         danger={false}
         confirmLabel="Enviar ahora"
         title={`¿Enviar "${toSend?.name}"?`}
-        description={`Se va a registrar el envío a ${formatNumber(toSend?.audience_count ?? 0)} clientes y la campaña pasa al historial. La entrega real por ${toSend?.channel === "whatsapp" ? "WhatsApp" : "email"} se activa al conectar tu cuenta (próximamente).`}
-      />
+        description={`Se va a registrar el envío a ${formatNumber(sendAudience)} clientes y la campaña pasa al historial. La entrega real por ${toSend?.channel === "whatsapp" ? "WhatsApp" : "email"} se activa al conectar tu cuenta (próximamente).`}
+      >
+        {sendQuota && (
+          <div
+            className={cn(
+              "rounded-xl border px-4 py-3 text-[12.5px] leading-relaxed",
+              sendQuota.over > 0
+                ? "border-warning-100 bg-warning-50 text-warning-600"
+                : "border-line bg-ink-50/60 text-ink-600",
+            )}
+          >
+            {sendQuota.over > 0 ? (
+              <>
+                Con esta campaña te pasás <strong>{formatNumber(sendQuota.over)} mensajes</strong> del
+                cupo de {formatNumber(sendQuota.included)} del mes. El excedente se factura aparte:{" "}
+                <strong>{formatMoney(sendQuota.extraCostArs)}</strong>.
+              </>
+            ) : (
+              <>
+                Usás {formatNumber(sendAudience)} de los{" "}
+                {formatNumber(sendQuota.included)} mensajes del mes. Te quedarían{" "}
+                <strong>{formatNumber(sendQuota.remaining)}</strong>.
+              </>
+            )}
+          </div>
+        )}
+      </ConfirmModal>
 
       <ConfirmModal
         open={!!toDelete}

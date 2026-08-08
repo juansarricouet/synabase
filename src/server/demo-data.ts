@@ -200,7 +200,7 @@ function build(): DemoDataset {
     logo_url: null,
     brand_color: "#c73418",
     hours: "Lun a Vie 8:00–20:00 · Sáb y Dom 9:00–21:00",
-    plan: "pro",
+    plan: "business",
     created_at: new Date(now - 240 * DAY).toISOString(),
   };
 
@@ -447,6 +447,12 @@ function build(): DemoDataset {
   }));
 
   const freq = customers.filter((c) => c.visits >= 5 && c.phone);
+  /* La más reciente de: hace seis días, o el día 2 del mes actual. */
+  const monthStart = new Date(now);
+  monthStart.setUTCDate(2);
+  monthStart.setUTCHours(10, 0, 0, 0);
+  const sentThisMonth = new Date(Math.max(now - 6 * DAY, monthStart.getTime())).toISOString();
+
   const campaigns: Campaign[] = [
     {
       id: uid(), business_id: bizId, name: "Volvió el budín de banana 🍌", channel: "whatsapp",
@@ -454,6 +460,15 @@ function build(): DemoDataset {
       message: "Hola {{nombre}} 👋 ¡Volvió el budín de banana que tanto pedían! Esta semana, si venís por la tarde, te lo llevás con 2x1. Te esperamos en Armenia 1602.",
       status: "sent", scheduled_for: null, sent_at: new Date(now - 52 * DAY).toISOString(),
       audience_count: freq.length, created_at: new Date(now - 54 * DAY).toISOString(), updated_at: new Date(now - 52 * DAY).toISOString(),
+    },
+    {
+      /* Enviada dentro del mes en curso pase lo que pase: si hoy es día 2, seis
+         días atrás caería en el mes anterior y el contador quedaría en cero. */
+      id: uid(), business_id: bizId, name: "Miércoles de medialunas 🥐", channel: "whatsapp",
+      segment_id: segments[0]!.id, segment_name: segments[0]!.name, subject: null,
+      message: "Hola {{nombre}}, todos los miércoles las medialunas van 3x2 hasta las 12. Te guardamos las tuyas ☕",
+      status: "sent", scheduled_for: null, sent_at: sentThisMonth,
+      audience_count: 412, created_at: sentThisMonth, updated_at: sentThisMonth,
     },
     {
       id: uid(), business_id: bizId, name: "Te extrañamos ❤️", channel: "whatsapp",
@@ -623,6 +638,21 @@ export function demoSegmentQuestions() {
       options: qq.options,
       form_name: d.forms.find((f) => f.id === qq.form_id)?.name ?? "",
     }));
+}
+
+/**
+ * Mensajes de WhatsApp gastados en el mes en curso.
+ *
+ * Se suma la audiencia de las campañas de WhatsApp ya enviadas dentro del mes,
+ * igual que hace la consulta real sobre campaign_recipients.
+ */
+export function demoWhatsappThisMonth(): number {
+  const month = new Date().toISOString().slice(0, 7);
+  return dataset()
+    .campaigns.filter(
+      (c) => c.channel === "whatsapp" && c.status === "sent" && (c.sent_at ?? "").startsWith(month),
+    )
+    .reduce((total, c) => total + c.audience_count, 0);
 }
 
 export function demoCampaigns(): Campaign[] {

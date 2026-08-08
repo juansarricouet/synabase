@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Avatar, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/Toast";
+import { MessageQuotaCard } from "@/components/MessageQuota";
+import { PLANS as PLAN_SPECS } from "@/lib/plans";
 import { api } from "@/lib/client";
 import { cn, formatNumber } from "@/lib/utils";
 import type { Business, Role } from "@/lib/types";
@@ -44,7 +46,7 @@ const PLANS = [
     period: "por mes",
     features: [
       "Todo lo de Pro",
-      "Campañas por WhatsApp",
+      `Campañas por WhatsApp: ${PLAN_SPECS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes`,
       "Múltiples sucursales",
       "Roles, permisos y soporte prioritario",
     ],
@@ -64,7 +66,7 @@ export function SettingsView({
   currentUserId: string;
   members: Member[];
   invitations: Invitation[];
-  usage: { customers: number; forms: number; submissions: number };
+  usage: { customers: number; forms: number; submissions: number; whatsappThisMonth: number };
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -412,6 +414,8 @@ export function SettingsView({
 
       {tab === "facturacion" && (
         <div className="space-y-5">
+          <MessageQuotaCard className="max-w-2xl" used={usage.whatsappThisMonth} planId={business.plan} />
+
           <section className="card max-w-2xl p-6">
             <h3 className="text-[14px] font-semibold tracking-tight text-ink-950">Uso actual</h3>
             <div className="mt-4 grid grid-cols-3 gap-3">

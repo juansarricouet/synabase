@@ -85,6 +85,7 @@ export function ConfirmModal({
   confirmLabel = "Eliminar",
   danger = true,
   loading,
+  children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -94,10 +95,13 @@ export function ConfirmModal({
   confirmLabel?: string;
   danger?: boolean;
   loading?: boolean;
+  /** Detalle extra entre la descripción y los botones (avisos, resúmenes). */
+  children?: React.ReactNode;
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title}>
       <p className="text-sm leading-relaxed text-ink-600">{description}</p>
+      {children && <div className="mt-4">{children}</div>}
       <div className="mt-5 flex justify-end gap-2.5">
         <button
           onClick={onClose}

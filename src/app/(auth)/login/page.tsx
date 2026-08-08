@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { ArrowRight, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Input";
 import { api } from "@/lib/client";
@@ -14,7 +14,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [demoLoading, setDemoLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,23 +29,12 @@ export default function LoginPage() {
     }
   }
 
-  async function enterDemo() {
-    setError(null);
-    setDemoLoading(true);
-    try {
-      await api("/api/auth/demo", { body: {} });
-      router.push("/app");
-      router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No pudimos preparar la demo");
-      setDemoLoading(false);
-    }
-  }
-
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-ink-950">Bienvenido de nuevo</h1>
-      <p className="mt-1.5 text-sm text-ink-500">Entrá a tu panel para ver cómo crece tu base de clientes.</p>
+      <h1 className="display-title text-[30px] text-inkblack">Bienvenido de nuevo</h1>
+      <p className="body-copy mt-2 text-[14.5px] text-inkblack/55">
+        Entrá a tu panel para ver cómo crece tu base de clientes.
+      </p>
 
       <form onSubmit={submit} className="mt-8 space-y-4">
         <Field label="Email">
@@ -77,25 +65,31 @@ export default function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" loading={loading} className="w-full" size="lg">
+        <Button type="submit" variant="coral" loading={loading} className="w-full" size="lg">
           Iniciar sesión
         </Button>
       </form>
 
-      <div className="my-6 flex items-center gap-3 text-xs text-ink-400">
-        <span className="h-px flex-1 bg-line" />
+      <div className="my-6 flex items-center gap-3 text-xs text-inkblack/35">
+        <span className="h-px flex-1 bg-inkblack/10" />
         o
-        <span className="h-px flex-1 bg-line" />
+        <span className="h-px flex-1 bg-inkblack/10" />
       </div>
 
-      <Button variant="secondary" size="lg" className="w-full" onClick={enterDemo} loading={demoLoading}>
-        <Sparkles className="size-4 text-brand-600" />
-        Explorar la demo con datos reales
-      </Button>
+      {/* La demo no necesita cuenta ni base de datos: es un enlace, no un
+          formulario que pueda fallar. */}
+      <Link
+        href="/demo"
+        className="group flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-inkblack/15 bg-white text-[14.5px] font-bold text-inkblack transition-all hover:border-inkblack/35"
+      >
+        <Eye className="size-4 text-coral" />
+        Recorrer la demo sin registrarme
+        <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+      </Link>
 
-      <p className="mt-8 text-center text-sm text-ink-500">
+      <p className="mt-8 text-center text-[14px] text-inkblack/55">
         ¿Todavía no tenés cuenta?{" "}
-        <Link href="/register" className="font-medium text-brand-700 transition-colors hover:text-brand-600">
+        <Link href="/register" className="font-semibold text-coral transition-colors hover:text-coral-600">
           Creala gratis
         </Link>
       </p>

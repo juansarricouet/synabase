@@ -31,9 +31,10 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-ink-950">Creá tu cuenta</h1>
-      <p className="mt-1.5 text-sm text-ink-500">
-        En dos minutos tenés tu QR listo para empezar a construir tu base de clientes.
+      <h1 className="display-title text-[30px] text-inkblack">Creá tu cuenta</h1>
+      <p className="body-copy mt-2 text-[14.5px] text-inkblack/55">
+        En dos minutos tenés tu QR listo para empezar a construir tu base de clientes. Empezás en el
+        plan Free: sin tarjeta y sin vencimiento.
       </p>
 
       <form onSubmit={submit} className="mt-8 space-y-4">
@@ -75,14 +76,14 @@ export default function RegisterPage() {
           </p>
         )}
 
-        <Button type="submit" loading={loading} className="w-full" size="lg">
+        <Button type="submit" variant="coral" loading={loading} className="w-full" size="lg">
           Continuar
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-ink-500">
+      <p className="mt-8 text-center text-[14px] text-inkblack/55">
         ¿Ya tenés cuenta?{" "}
-        <Link href="/login" className="font-medium text-brand-700 transition-colors hover:text-brand-600">
+        <Link href="/login" className="font-semibold text-coral transition-colors hover:text-coral-600">
           Iniciá sesión
         </Link>
       </p>

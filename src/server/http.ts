@@ -46,14 +46,64 @@ export function withPublic<Args extends unknown[]>(
   };
 }
 
+/**
+ * Códigos de PostgreSQL y de red que significan "la base no está disponible",
+ * a diferencia de un error de la aplicación.
+ *
+ *   ECONNREFUSED / ENOTFOUND / ETIMEDOUT — no se llegó al servidor
+ *   28P01 — contraseña rechazada
+ *   3D000 — la base no existe
+ *   57P03 — el servidor está arrancando
+ */
+const DB_ERROR_CODES = new Set([
+  "ECONNREFUSED",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "EAI_AGAIN",
+  "28P01",
+  "3D000",
+  "57P03",
+]);
+
+/**
+ * ¿Es un problema de conexión con la base y no un error de la aplicación?
+ *
+ * Importa distinguirlos: si la base no está configurada, decir "ocurrió un
+ * error inesperado" deja a quien se registra sin idea de qué pasó, y a quien
+ * administra el sitio sin idea de qué arreglar.
+ */
+function isDatabaseError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const code = String((err as { code?: unknown }).code ?? "");
+  if (DB_ERROR_CODES.has(code)) return true;
+  return (
+    err.message.includes("DATABASE_URL") ||
+    /password authentication|database .* does not exist|Connection terminated|connection timeout|timeout expired/i.test(
+      err.message,
+    )
+  );
+}
+
 function handleError(err: unknown, req: Request): Response {
   if (err instanceof ApiError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
-  log.error("api.unhandled", {
-    url: req.url,
-    message: err instanceof Error ? err.message : String(err),
-  });
+
+  const message = err instanceof Error ? err.message : String(err);
+  log.error("api.unhandled", { url: req.url, message });
+
+  if (isDatabaseError(err)) {
+    return NextResponse.json(
+      {
+        error:
+          "La base de datos todavía no está conectada, así que no se puede crear ni consultar cuentas. " +
+          "Si administrás el sitio: configurá la variable DATABASE_URL (ver DEPLOY.md). " +
+          "Mientras tanto podés recorrer la demo, que funciona sin base de datos.",
+      },
+      { status: 503 },
+    );
+  }
+
   return NextResponse.json(
     { error: "Ocurrió un error inesperado. Probá de nuevo." },
     { status: 500 },

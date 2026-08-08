@@ -1,0 +1,135 @@
+import "server-only";
+import { log } from "./log";
+
+/**
+ * Avisos por mail para el dueño del producto.
+ *
+ * Se manda con Resend porque no necesita servidor SMTP: una clave y un POST.
+ * Si no hay clave configurada el aviso queda en el log y la operación sigue —
+ * nadie debería quedarse sin poder registrarse porque falló un mail.
+ */
+
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
+
+/** Casilla que recibe los avisos. Sin esto, no se manda nada. */
+function notifyTo(): string | null {
+  return process.env.NOTIFY_EMAIL_TO ?? null;
+}
+
+/**
+ * Remitente. Resend exige un dominio verificado; `onboarding@resend.dev` sirve
+ * para probar sin verificar nada, pero sólo entrega a la casilla dueña de la
+ * cuenta de Resend.
+ */
+function notifyFrom(): string {
+  return process.env.NOTIFY_EMAIL_FROM ?? "SynapBase <onboarding@resend.dev>";
+}
+
+async function send(subject: string, html: string): Promise<void> {
+  const to = notifyTo();
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!to || !apiKey) {
+    log.info("notify.skipped", {
+      subject,
+      reason: !to ? "falta NOTIFY_EMAIL_TO" : "falta RESEND_API_KEY",
+    });
+    return;
+  }
+
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from: notifyFrom(), to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      log.error("notify.failed", { subject, status: res.status, body: await res.text() });
+      return;
+    }
+    log.info("notify.sent", { subject, to });
+  } catch (err) {
+    log.error("notify.error", { subject, message: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/**
+ * Aviso de cuenta nueva.
+ *
+ * Va con `void` desde la ruta de registro: el alta no debe esperar al mail ni
+ * fallar si el proveedor está caído.
+ */
+export async function notifyNewSignup(user: {
+  name: string;
+  email: string;
+}): Promise<void> {
+  const name = escapeHtml(user.name);
+  const email = escapeHtml(user.email);
+  const when = new Date().toLocaleString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    dateStyle: "full",
+    timeStyle: "short",
+  });
+
+  await send(
+    `Cuenta nueva en SynapBase: ${name}`,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;color:#111">
+      <h2 style="margin:0 0 4px;font-size:19px">Se registró alguien nuevo</h2>
+      <p style="margin:0 0 20px;color:#666;font-size:14px">${escapeHtml(when)}</p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Nombre</td><td style="padding:6px 0"><strong>${name}</strong></td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Email</td><td style="padding:6px 0"><a href="mailto:${email}">${email}</a></td></tr>
+      </table>
+      <p style="margin:24px 0 0;font-size:14px">
+        <a href="mailto:${email}?subject=${encodeURIComponent("Tu cuenta de SynapBase")}"
+           style="display:inline-block;background:#ff5a45;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600">
+          Escribirle para coordinar la reunión
+        </a>
+      </p>
+      <p style="margin:24px 0 0;color:#999;font-size:12px">
+        Todavía no eligió el nombre de su comercio: eso pasa en el paso siguiente.
+      </p>
+    </div>`,
+  );
+}
+
+/** Aviso de comercio creado, que es cuando el alta queda completa. */
+export async function notifyNewBusiness(data: {
+  businessName: string;
+  category: string | null;
+  userName: string;
+  userEmail: string;
+}): Promise<void> {
+  const biz = escapeHtml(data.businessName);
+  const email = escapeHtml(data.userEmail);
+
+  await send(
+    `Comercio nuevo en SynapBase: ${biz}`,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;color:#111">
+      <h2 style="margin:0 0 20px;font-size:19px">${biz} terminó de crear su cuenta</h2>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Comercio</td><td style="padding:6px 0"><strong>${biz}</strong></td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Rubro</td><td style="padding:6px 0">${escapeHtml(data.category ?? "—")}</td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">A cargo</td><td style="padding:6px 0">${escapeHtml(data.userName)}</td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Email</td><td style="padding:6px 0"><a href="mailto:${email}">${email}</a></td></tr>
+      </table>
+      <p style="margin:24px 0 0;font-size:14px">
+        <a href="mailto:${email}?subject=${encodeURIComponent(`Bienvenidos a SynapBase, ${data.businessName}`)}"
+           style="display:inline-block;background:#ff5a45;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600">
+          Coordinar la reunión
+        </a>
+      </p>
+    </div>`,
+  );
+}

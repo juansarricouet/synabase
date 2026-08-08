@@ -178,6 +178,30 @@ export const RANKING_COLORS = [
   "#ffd6bb",
 ];
 
+/**
+ * Arma un enlace de WhatsApp a partir del teléfono que cargó el comercio.
+ *
+ * `wa.me` quiere sólo dígitos, con código de país y sin `+`. Para los celulares
+ * argentinos WhatsApp además exige un 9 después del 54, que casi nadie escribe
+ * al cargar su número: se agrega acá.
+ *
+ * Devuelve `null` si el número no alcanza para armar algo verosímil, así el
+ * botón directamente no se muestra en vez de llevar a un chat que no existe.
+ */
+export function whatsappLink(phone: string | null | undefined, message: string): string | null {
+  if (!phone) return null;
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length < 8) return null;
+
+  if (digits.startsWith("54")) {
+    if (digits[2] !== "9") digits = `549${digits.slice(2)}`;
+  } else if (digits.length <= 11) {
+    // Sin código de país: se asume Argentina, que es donde se vende.
+    digits = `549${digits}`;
+  }
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+
 export function downloadBlob(content: BlobPart, filename: string, type: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);

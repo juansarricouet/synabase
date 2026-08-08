@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { BIZ_COOKIE, getCurrentUser } from "@/server/auth";
 import { parseBody, withPublic, withTenant, requireRole } from "@/server/http";
 import { createBusiness, updateBusiness } from "@/server/services/business";
+import { notifyNewBusiness } from "@/server/notify";
 
 const createSchema = z.object({
   name: z.string().min(2, "Contanos el nombre de tu comercio").max(80),
@@ -18,6 +19,16 @@ export const POST = withPublic(async (req) => {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const data = await parseBody(req, createSchema);
   const business = await createBusiness(user.id, data);
+
+  /* Acá es donde el alta queda completa: ya hay comercio con nombre y rubro,
+     que es lo que sirve para coordinar la reunión. */
+  void notifyNewBusiness({
+    businessName: business.name,
+    category: business.category,
+    userName: user.name,
+    userEmail: user.email,
+  });
+
   const store = await cookies();
   store.set(BIZ_COOKIE, business.id, { httpOnly: true, sameSite: "lax", path: "/" });
   return NextResponse.json({ business });

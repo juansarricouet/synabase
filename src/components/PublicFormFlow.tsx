@@ -1,14 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, PartyPopper } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, ArrowRight, Check, MessageCircle, PartyPopper } from "lucide-react";
+import { cn, whatsappLink } from "@/lib/utils";
 import { api } from "@/lib/client";
 import type { Form, Question } from "@/lib/types";
 
 interface PublicBusiness {
   name: string;
   logo_url: string | null;
+  /** Para ofrecer el código por WhatsApp al terminar. Puede no estar cargado. */
+  phone?: string | null;
 }
 
 interface Props {
@@ -34,6 +36,16 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const accent = form.theme.color || "#c73418";
+
+  /* Enlace para que el cliente reciba su código por WhatsApp. En la vista
+     previa del constructor no se ofrece: no hay código real que mandar. */
+  const waLink =
+    result && !preview
+      ? whatsappLink(
+          business.phone,
+          `¡Hola ${business.name}! Soy ${result.customer_name}, completé el formulario. Mi código es ${result.discount_code} 🙌`,
+        )
+      : null;
 
   // Registrar el escaneo una sola vez por sesión
   useEffect(() => {
@@ -271,6 +283,21 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
                 {form.incentive}
               </p>
             </div>
+
+            {/* El cliente abre el chat: el comercio queda con su número
+                verificado y con la conversación iniciada de su lado. */}
+            {waLink && (
+              <a
+                href={waLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 flex h-12 w-full max-w-xs items-center justify-center gap-2.5 rounded-xl text-[14.5px] font-bold text-white transition-opacity hover:opacity-90"
+                style={{ background: accent }}
+              >
+                <MessageCircle className="size-4.5" strokeWidth={2} />
+                Recibilo por WhatsApp
+              </a>
+            )}
 
             <p className="mt-6 text-xs leading-relaxed text-ink-400">
               {result.first_time

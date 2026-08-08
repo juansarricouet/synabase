@@ -79,14 +79,14 @@ export async function listQuestions(formId: string): Promise<Question[]> {
 
 export async function getPublicFormBySlug(slug: string): Promise<{
   form: Form;
-  business: { id: string; name: string; logo_url: string | null; brand_color: string };
+  business: { id: string; name: string; logo_url: string | null; brand_color: string; phone: string | null };
 } | null> {
   const row = await one("SELECT * FROM forms WHERE slug = $1 AND is_template = FALSE", [slug]);
   if (!row) return null;
   const form = rowToForm(row);
   form.questions = (await listQuestions(form.id)).filter((q) => q.active);
-  const biz = await one<{ id: string; name: string; logo_url: string | null; brand_color: string }>(
-    "SELECT id, name, logo_url, brand_color FROM businesses WHERE id = $1",
+  const biz = await one<{ id: string; name: string; logo_url: string | null; brand_color: string; phone: string | null }>(
+    "SELECT id, name, logo_url, brand_color, phone FROM businesses WHERE id = $1",
     [form.business_id],
   );
   if (!biz) return null;

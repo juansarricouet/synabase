@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSession, createUser, findUserByEmail, SESSION_COOKIE } from "@/server/auth";
 import { parseBody, withPublic } from "@/server/http";
+import { notifyNewSignup } from "@/server/notify";
 
 const schema = z.object({
   name: z.string().min(2, "Contanos tu nombre").max(80),
@@ -19,6 +20,11 @@ export const POST = withPublic(async (req) => {
     );
   }
   const user = await createUser(data.email, data.name, data.password);
+
+  /* Sin await: el alta no debe esperar al proveedor de mail ni fallar si está
+     caído. `notifyNewSignup` ya atrapa sus propios errores. */
+  void notifyNewSignup({ name: user.name, email: user.email });
+
   const { token, expiresAt } = await createSession(user.id);
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {

@@ -73,7 +73,7 @@ export function OnboardingForm({ userName }: { userName: string }) {
         </p>
       )}
 
-      <Button type="submit" loading={loading} className="w-full" size="lg">
+      <Button type="submit" variant="coral" loading={loading} className="w-full" size="lg">
         Crear mi panel
         <ArrowRight className="size-4" />
       </Button>

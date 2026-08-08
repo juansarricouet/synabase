@@ -4,7 +4,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "brand" | "coral";
 type Size = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,6 +20,10 @@ const variants: Record<Variant, string> = {
     "bg-brand-600 text-white hover:bg-brand-700 active:scale-[0.98] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_1px_2px_rgb(64_18_10/0.3)]",
   secondary:
     "bg-white text-ink-800 border border-line-strong/80 hover:bg-ink-50 hover:border-ink-300 active:scale-[0.98] shadow-[0_1px_2px_rgb(23_23_28/0.05)]",
+  /* Coral de la landing: para las pantallas públicas (login, registro, alta),
+     que se ven antes de entrar al panel. */
+  coral:
+    "bg-coral text-white hover:bg-coral-600 active:scale-[0.98] shadow-[inset_0_1px_0_rgb(255_255_255/0.2),0_1px_2px_rgb(64_18_10/0.28)]",
   ghost: "text-ink-600 hover:bg-ink-100/70 hover:text-ink-900",
   danger: "bg-danger-600 text-white hover:bg-red-700 active:scale-[0.98]",
 };

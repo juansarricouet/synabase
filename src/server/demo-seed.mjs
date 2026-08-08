@@ -3,7 +3,8 @@
  * Genera ~8 meses de historia realista (clientes, visitas, respuestas, escaneos,
  * segmentos y campañas) con un RNG determinístico.
  *
- * Se usa desde `npm run seed` (scripts/seed.mjs) y desde POST /api/auth/demo.
+ * Se usa desde `npm run seed` (scripts/seed.mjs) para tener datos en una base
+ * real. La demo pública de /demo no pasa por acá: no usa base de datos.
  */
 import pg from "pg";
 import crypto from "node:crypto";

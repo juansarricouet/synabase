@@ -41,7 +41,14 @@ const updateSchema = z.object({
   phone: z.string().max(40).nullable().optional(),
   hours: z.string().max(300).nullable().optional(),
   brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color inválido").optional(),
-  logo_url: z.string().max(500000).nullable().optional(),
+  /* El logo se guarda como data URI de imagen. Se valida el prefijo para que
+     el campo no termine aceptando cualquier URL arbitraria. */
+  logo_url: z
+    .string()
+    .max(500000)
+    .regex(/^data:image\/(png|jpeg|jpg|webp|gif|svg\+xml);base64,/, "Formato de imagen no válido")
+    .nullable()
+    .optional(),
   plan: z.enum(["free", "pro", "business"]).optional(),
 });
 

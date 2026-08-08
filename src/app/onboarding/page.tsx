@@ -22,10 +22,15 @@ export default async function OnboardingPage() {
               <span className="flex size-4.5 items-center justify-center rounded-full bg-success-100 text-[10px] text-green-700">✓</span>
               Cuenta creada
               <span className="mx-1 h-3 w-px bg-line-strong" />
-              <span className="flex size-4.5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-semibold text-white">2</span>
+              <span className="flex size-4.5 items-center justify-center rounded-full bg-coral text-[10px] font-semibold text-white">2</span>
               Tu comercio
             </div>
-            <h1 className="display-title text-[28px] text-inkblack">Contanos sobre tu comercio</h1>
+            <p className="font-display text-[13px] font-bold tracking-tight text-coral">
+              Paso 2 de 2
+            </p>
+            <h1 className="display-title mt-2.5 text-[30px] text-inkblack">
+              Contanos sobre tu comercio
+            </h1>
             <p className="body-copy mt-2.5 text-[14.5px] text-inkblack/55">
               Con esto creamos tu panel y tu primer formulario con QR, listo para personalizar.
             </p>

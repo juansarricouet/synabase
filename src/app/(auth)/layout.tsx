@@ -12,55 +12,71 @@ const STEPS = [
   { icon: Users, title: "Tu base se arma sola", text: "Quién es, qué consume y cuándo vuelve" },
 ];
 
+/** Mismo wordmark que la landing: minúsculas, bold y punto en coral. */
+function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`font-display text-[19px] font-extrabold tracking-tight text-inkblack ${className}`}>
+      synapbase<span className="text-coral">.</span>
+    </span>
+  );
+}
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid min-h-dvh bg-offwhite lg:grid-cols-[1fr_minmax(500px,46%)]">
-      {/* Formulario */}
-      <div className="flex flex-col px-6 py-7 sm:px-12">
-        <div className="flex items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="group inline-flex items-center gap-2 text-[13px] font-medium text-inkblack/50 transition-colors hover:text-inkblack"
-          >
-            <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
-            Volver al inicio
+    <div className="grid min-h-dvh bg-offwhite font-sans text-inkblack antialiased lg:grid-cols-[1fr_minmax(480px,44%)]">
+      {/* ————— Formulario ————— */}
+      <div className="flex flex-col px-6 py-6 sm:px-10 lg:px-14">
+        {/* Misma barra que la landing: marca a la izquierda, acciones a la derecha */}
+        <header className="flex items-center justify-between gap-4">
+          <Link href="/" className="shrink-0">
+            <Wordmark />
           </Link>
-          <Link
-            href="/demo"
-            className="text-[13px] font-semibold text-coral transition-colors hover:text-coral-600"
-          >
-            Ver la demo
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/"
+              className="group hidden items-center gap-1.5 rounded-lg px-3 py-2 text-[13.5px] font-medium text-inkblack/50 transition-colors hover:text-inkblack sm:inline-flex"
+            >
+              <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+              Inicio
+            </Link>
+            <Link
+              href="/demo"
+              className="sheen rounded-lg bg-inkblack px-4 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-inkblack/85"
+            >
+              Ver la demo
+            </Link>
+          </div>
+        </header>
+
+        <div className="flex flex-1 items-center justify-center py-12">
+          <div className="w-full max-w-[380px]">{children}</div>
         </div>
 
-        <div className="flex flex-1 items-center justify-center py-10">
-          <div className="w-full max-w-sm animate-fade-up">{children}</div>
-        </div>
-
-        <p className="text-center text-xs text-inkblack/40">
-          Un producto de <span className="font-semibold text-inkblack/60">Synapse</span> · Hecho para
+        <p className="text-center text-[11.5px] text-inkblack/35">
+          Un producto de <span className="font-semibold text-inkblack/55">Synapse</span> · Hecho para
           comercios que quieren conocer a sus clientes
         </p>
       </div>
 
-      {/* Panel lateral: qué es y qué incluye cada plan */}
-      <aside className="relative hidden overflow-hidden bg-inkblack lg:block">
+      {/* ————— Panel lateral: qué es y qué incluye cada plan ————— */}
+      <aside className="relative hidden overflow-hidden bg-inkblack lg:flex lg:flex-col">
         <div
-          className="absolute inset-0 opacity-70"
+          className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(760px 480px at 15% -10%, rgb(255 90 69 / 0.30), transparent 62%), radial-gradient(680px 480px at 110% 108%, rgb(199 52 24 / 0.28), transparent 60%)",
+              "radial-gradient(720px 460px at 12% -8%, rgb(255 90 69 / 0.26), transparent 62%), radial-gradient(640px 460px at 112% 106%, rgb(199 52 24 / 0.24), transparent 60%)",
           }}
         />
-        <div className="relative flex h-full flex-col justify-center gap-9 px-12 py-14 xl:px-16">
+
+        <div className="stagger relative flex flex-1 flex-col justify-center gap-8 px-12 py-14 xl:px-16">
           <div>
             <p className="font-display text-[13px] font-bold tracking-tight text-coral">
-              Qué es SynapBase
+              01 — Qué es SynapBase
             </p>
-            <h2 className="display-title mt-3 max-w-[15ch] text-[30px] text-white xl:text-[34px]">
+            <h2 className="display-title mt-3.5 max-w-[15ch] text-[32px] text-white xl:text-[36px]">
               La base de datos de tus clientes se arma sola
             </h2>
-            <p className="body-copy mt-4 max-w-[44ch] text-[14.5px] text-white/55">
+            <p className="body-copy mt-4 max-w-[44ch] text-[14.5px] text-white/50">
               Cientos de personas pasan por tu local todos los meses y no sabés nada de ellas.
               SynapBase convierte ese anonimato en datos que podés usar.
             </p>
@@ -70,17 +86,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             {STEPS.map((s, i) => (
               <li
                 key={s.title}
-                className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3.5 backdrop-blur"
+                className="flex items-center gap-3.5 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3.5 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-coral/35 hover:bg-white/[0.07]"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-coral/20 text-coral">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-coral/15 text-coral">
                   <s.icon className="size-4.5" strokeWidth={1.75} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-[13.5px] font-semibold text-white">
-                    <span className="mr-1.5 text-coral">{i + 1}.</span>
+                    <span className="numeral mr-1.5 text-[13.5px]">{i + 1}.</span>
                     {s.title}
                   </p>
-                  <p className="text-[12px] text-white/50">{s.text}</p>
+                  <p className="text-[12px] text-white/45">{s.text}</p>
                 </div>
               </li>
             ))}
@@ -88,41 +104,45 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           <div>
             <p className="font-display text-[13px] font-bold tracking-tight text-coral">
-              En qué se diferencian los planes
+              02 — En qué se diferencian los planes
             </p>
-            <div className="mt-3.5 grid max-w-md gap-2.5">
+            <div className="mt-3.5 grid max-w-md gap-2">
               {t.pricing.plans.map((p) => {
                 const { price, period } = planPrice(p, "es");
-                /* La diferencia real entre planes es una sola línea cada uno:
-                   el detalle completo está en la página de precios. */
+                /* La diferencia real entre planes es una línea cada uno: el
+                   detalle completo está en la página de precios. */
                 const gist =
                   p.name === "Free"
-                    ? "Para probar: un formulario y hasta 100 clientes."
+                    ? "Solo la encuesta y los números, hasta 100 clientes. Sin campañas."
                     : p.name === "Pro"
-                      ? "Todo sin límite, con campañas por email."
-                      : `Suma campañas por WhatsApp: ${PLANS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes.`;
+                      ? "Base sin límite y campañas por email."
+                      : `Suma WhatsApp: ${PLANS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes.`;
                 return (
                   <div
                     key={p.name}
-                    className={`rounded-2xl border px-5 py-3.5 ${
-                      p.highlight ? "border-coral/45 bg-coral/10" : "border-white/10 bg-white/[0.05]"
+                    className={`rounded-2xl border px-5 py-3 transition-all duration-300 hover:-translate-y-0.5 ${
+                      p.highlight
+                        ? "border-coral/45 bg-coral/[0.09] shadow-[0_16px_50px_-30px_rgb(255_90_69/0.8)]"
+                        : "border-white/10 bg-white/[0.04]"
                     }`}
                   >
                     <div className="flex items-baseline justify-between gap-3">
-                      <p className="text-[13.5px] font-bold text-white">
+                      <p className="font-display text-[14px] font-bold text-white">
                         {p.name}
                         {p.highlight && (
-                          <span className="ml-2 rounded-full bg-coral px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-white">
+                          <span className="ml-2 rounded-full bg-coral px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
                             Más elegido
                           </span>
                         )}
                       </p>
-                      <p className="shrink-0 text-[13px] text-white/60">
-                        <span className="font-display font-bold text-white">{price}</span>
-                        <span className="ml-1 text-[11.5px]">{period}</span>
+                      <p className="shrink-0 whitespace-nowrap text-white/50">
+                        <span className="font-display text-[15px] font-extrabold tracking-tight text-white">
+                          {price}
+                        </span>
+                        <span className="ml-1 text-[11px]">{period}</span>
                       </p>
                     </div>
-                    <p className="mt-1 flex items-start gap-1.5 text-[12px] text-white/50">
+                    <p className="mt-1 flex items-start gap-1.5 text-[12px] text-white/45">
                       <Check className="mt-0.5 size-3 shrink-0 text-coral" strokeWidth={3} />
                       {gist}
                     </p>
@@ -130,9 +150,29 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 );
               })}
             </div>
-            <p className="mt-3.5 text-[12px] text-white/35">
+            <p className="mt-3 text-[11.5px] text-white/30">
               Empezás en Free y cambiás de plan cuando quieras, sin tarjeta.
             </p>
+          </div>
+        </div>
+
+        {/* Misma cinta de la landing, para que el sector no se sienta aparte */}
+        <div className="relative border-t border-white/10 py-4">
+          <div className="marquee">
+            <div>
+              {[0, 1].map((copy) => (
+                <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
+                  {t.marquee.map((label) => (
+                    <span key={label} className="flex items-center whitespace-nowrap">
+                      <span className="font-display px-6 text-[12.5px] font-bold tracking-tight text-white/40">
+                        {label}
+                      </span>
+                      <span className="size-1 shrink-0 rounded-full bg-coral" />
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </aside>

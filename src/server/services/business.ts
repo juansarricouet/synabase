@@ -164,7 +164,18 @@ export async function revokeInvitation(businessId: string, invitationId: string)
   if (changes === 0) throw new ApiError(404, "Invitación no encontrada");
 }
 
+/** Días que vale una invitación antes de caducar sola. */
+const INVITATION_TTL_DAYS = 7;
+
+/**
+ * Busca una invitación por su token.
+ *
+ * Descarta las vencidas: un enlace de invitación da acceso a los datos de un
+ * comercio, así que no puede quedar válido para siempre en la bandeja de
+ * entrada de alguien.
+ */
 export async function getInvitationByToken(token: string) {
+  const minCreatedAt = new Date(Date.now() - INVITATION_TTL_DAYS * 86400000).toISOString();
   return one<{
     id: string;
     business_id: string;
@@ -174,8 +185,8 @@ export async function getInvitationByToken(token: string) {
   }>(
     `SELECT i.id, i.business_id, i.email, i.role, b.name AS business_name
      FROM invitations i JOIN businesses b ON b.id = i.business_id
-     WHERE i.token = $1 AND i.status = 'pending'`,
-    [token],
+     WHERE i.token = $1 AND i.status = 'pending' AND i.created_at >= $2`,
+    [token, minCreatedAt],
   );
 }
 

@@ -24,7 +24,12 @@ const PLANS = [
     name: "Free",
     price: "$0",
     period: "para siempre",
-    features: ["1 formulario con QR", "Hasta 100 clientes", "Panel y métricas básicas"],
+    features: [
+      "1 formulario con QR",
+      "Hasta 100 clientes en tu base",
+      "Panel, estadísticas y respuestas",
+      "Sin campañas: ni email ni WhatsApp",
+    ],
   },
   {
     id: "pro",

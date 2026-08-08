@@ -451,14 +451,20 @@ input[type="range"]::-webkit-slider-thumb:hover {
  * abajo. La máscara recorta el desborde para que parezca que aparece.
  */
 .line-mask { display: block; overflow: hidden; }
+/*
+ * La línea sube apenas se monta. Antes esperaba a que el bloque padre tuviera
+ * `.rv.in`, así que en las pantallas sin scroll-reveal —login, registro— el
+ * titular se quedaba escondido abajo de su máscara, invisible.
+ */
 .line-mask > span {
   display: block;
-  transform: translateY(105%);
-}
-.rv.in .line-mask > span,
-.line-mask.in > span {
   animation: line-rise 0.85s var(--ease-out-expo) both;
   animation-delay: calc(var(--i, 0) * 90ms);
+}
+/* Dentro de un bloque que revela al hacer scroll, la línea espera su turno. */
+.rv:not(.in) .line-mask > span {
+  animation: none;
+  transform: translateY(105%);
 }
 
 /* Cinta infinita: el contenido va duplicado y se desplaza media pasada */

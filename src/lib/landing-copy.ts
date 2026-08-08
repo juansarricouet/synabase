@@ -86,7 +86,12 @@ const PLANS_ES: Plan[] = [
   {
     name: PLANS.free.name,
     ars: PLANS.free.ars,
-    features: ["1 formulario con QR", "Hasta 100 clientes", "Panel y métricas básicas"],
+    features: [
+      "1 formulario con QR",
+      "Hasta 100 clientes en tu base",
+      "Panel, estadísticas y respuestas",
+      "Sin campañas: ni email ni WhatsApp",
+    ],
     cta: "Crear cuenta",
   },
   {
@@ -118,7 +123,12 @@ const PLANS_EN: Plan[] = [
   {
     name: PLANS.free.name,
     ars: PLANS.free.ars,
-    features: ["1 form with QR code", "Up to 100 customers", "Dashboard and basic metrics"],
+    features: [
+      "1 form with QR code",
+      "Up to 100 customers in your database",
+      "Dashboard, analytics and responses",
+      "No campaigns: neither email nor WhatsApp",
+    ],
     cta: "Create account",
   },
   {

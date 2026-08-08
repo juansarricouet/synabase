@@ -73,9 +73,9 @@ export function OnboardingForm({ userName }: { userName: string }) {
         </p>
       )}
 
-      <Button type="submit" variant="coral" loading={loading} className="w-full" size="lg">
+      <Button type="submit" variant="coral" loading={loading} className="sheen group h-12! w-full rounded-xl text-[15px]">
         Crear mi panel
-        <ArrowRight className="size-4" />
+        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
       </Button>
       <p className="text-center text-xs leading-relaxed text-ink-400">
         Vas a poder cambiar todo esto después desde Ajustes.

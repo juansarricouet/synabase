@@ -22,11 +22,14 @@ export interface PaymentMethod {
 
 /** Datos de cobro para un plan. */
 export function paymentMethod(planId: string): PaymentMethod {
+  /* Se admite un link por plan o uno solo para todos: con una cuenta personal
+     de Mercado Pago lo normal es tener un único link de monto abierto. */
+  const general = process.env.PAYMENT_LINK ?? null;
   const link =
     planId === "pro"
-      ? (process.env.PAYMENT_LINK_PRO ?? null)
+      ? (process.env.PAYMENT_LINK_PRO ?? general)
       : planId === "business"
-        ? (process.env.PAYMENT_LINK_BUSINESS ?? null)
+        ? (process.env.PAYMENT_LINK_BUSINESS ?? general)
         : null;
 
   return {

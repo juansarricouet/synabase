@@ -11,7 +11,7 @@ export default function DemoDatabasePage() {
   }));
   return (
     <div>
-      <PageHeader title="Base de datos" description={`${rows.length} registros capturados por tus formularios. Filtrá, agrupá y exportá.`} />
+      <PageHeader title="Base de datos" hint="La planilla cruda: una fila por respuesta del formulario. Se puede filtrar, agrupar, editar celda por celda y bajar a Excel, CSV o PDF." description={`${rows.length} registros capturados por tus formularios. Filtrá, agrupá y exportá.`} />
       <DataGrid rows={rows} forms={forms} businessName={getDemoBusiness().name} basePath="/demo" />
     </div>
   );

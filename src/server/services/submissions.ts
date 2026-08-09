@@ -15,6 +15,7 @@ import {
 import { ApiError } from "../http";
 import { log } from "../log";
 import { getPublicFormBySlug } from "./forms";
+import { validarRespuesta } from "@/lib/answer-validation";
 import type { Question, SubmissionRow } from "@/lib/types";
 
 /* ————— Registro de escaneos ————— */
@@ -113,7 +114,15 @@ export async function submitForm(
   const questions = form.questions ?? [];
   const clean = new Map<string, unknown>();
   for (const q of questions) {
-    clean.set(q.id, coerceAnswer(q, rawAnswers[q.id]));
+    const valor = coerceAnswer(q, rawAnswers[q.id]);
+
+    /* Se revalida en el servidor: el formulario ya avisa mientras se escribe,
+       pero ese control se saltea mandando el pedido a mano, y una base llena de
+       "11111" no sirve para segmentar ni para contactar a nadie. */
+    const problema = validarRespuesta(q.maps_to, valor);
+    if (problema) throw new ApiError(400, problema.mensaje);
+
+    clean.set(q.id, valor);
   }
 
   // Campos mapeados a la ficha del cliente

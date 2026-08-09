@@ -17,6 +17,7 @@ export default async function CampaignsPage(props: { searchParams: Promise<{ seg
     <div>
       <PageHeader
         title="Campañas"
+        hint="Elegís un segmento, escribís un mensaje con el nombre y el gusto de cada uno, y lo mandás por email o WhatsApp. Antes de enviar te decimos a cuánta gente le llega."
         description="Mensajes segmentados para que tus clientes vuelvan. Guardá borradores, programá y llevá el historial."
       />
       <CampaignsView

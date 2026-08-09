@@ -31,6 +31,7 @@ export default async function DatabasePage() {
     <div>
       <PageHeader
         title="Base de datos"
+        hint="La planilla cruda: una fila por respuesta del formulario. Se puede filtrar, agrupar, editar celda por celda y bajar a Excel, CSV o PDF."
         description={`${total} registros capturados por tus formularios. Filtrá, agrupá, editá y exportá.`}
       />
       <DataGrid

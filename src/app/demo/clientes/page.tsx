@@ -10,7 +10,7 @@ export default function DemoCustomersPage() {
   }));
   return (
     <div>
-      <PageHeader title="Clientes" description={`${rows.length} personas en tu base. Cada una con su historia de consumo.`} />
+      <PageHeader title="Clientes" hint="Cada fila es una persona que escaneó tu QR. Entrá a una ficha para ver todas sus visitas, qué consume y hace cuánto no viene." description={`${rows.length} personas en tu base. Cada una con su historia de consumo.`} />
       <CustomersTable rows={rows} basePath="/demo" />
     </div>
   );

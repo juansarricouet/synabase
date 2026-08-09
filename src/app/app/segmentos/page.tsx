@@ -40,6 +40,7 @@ export default async function SegmentsPage() {
     <div>
       <PageHeader
         title="Segmentos"
+        hint={'Un segmento es un grupo que se arma solo con reglas: por ejemplo "hace más de 30 días que no vienen". Se actualiza cada vez que entra un cliente nuevo.'}
         description="Agrupá clientes por comportamiento y datos reales. Después usalos en campañas para traerlos de vuelta."
       />
       <SegmentsView segments={segments} tags={tags} questions={questions} totalCustomers={totalCustomers} />

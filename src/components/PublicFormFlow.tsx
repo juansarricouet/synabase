@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, MessageCircle, PartyPopper } from "lucide-react";
 import { cn, whatsappLink } from "@/lib/utils";
+import { validarRespuesta } from "@/lib/answer-validation";
 import { api } from "@/lib/client";
 import type { Form, Question } from "@/lib/types";
 
@@ -33,6 +34,7 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
   const [step, setStep] = useState(-1); // -1 bienvenida · 0..n-1 preguntas · n listo
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<{ qid: string; valor: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResult | null>(null);
   const accent = form.theme.color || "#c73418";
@@ -68,29 +70,35 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
     [],
   );
 
-  function validate(q: Question, value: unknown): string | null {
+  /**
+   * Revisa la respuesta antes de dejar avanzar.
+   *
+   * Devuelve además la corrección propuesta cuando parece un error de tipeo,
+   * para poder ofrecer el arreglo en un clic en vez de sólo señalar la falla.
+   */
+  function validate(q: Question, value: unknown): { mensaje: string; sugerencia?: string } | null {
     const empty =
       value === undefined ||
       value === null ||
       value === "" ||
       (Array.isArray(value) && value.length === 0);
-    if (q.required && empty) return "Esta respuesta es necesaria para continuar";
-    if (!empty && q.maps_to === "email" && typeof value === "string") {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return "Ese email no parece válido";
-    }
+    if (q.required && empty) return { mensaje: "Esta respuesta es necesaria para continuar" };
     if (!empty && (q.type === "number" || q.type === "scale") && !Number.isFinite(Number(value)))
-      return "Ingresá un número válido";
-    return null;
+      return { mensaje: "Ingresá un número válido" };
+    if (empty) return null;
+    return validarRespuesta(q.maps_to, value);
   }
 
   const goNext = useCallback(() => {
     if (!current) return;
     const err = validate(current, answers[current.id]);
     if (err) {
-      setError(err);
+      setError(err.mensaje);
+      setSuggestion(err.sugerencia ? { qid: current.id, valor: err.sugerencia } : null);
       return;
     }
     setError(null);
+    setSuggestion(null);
     if (step < total - 1) setStep(step + 1);
     else void finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,9 +237,24 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
             </div>
 
             {error && (
-              <p className="mt-4 rounded-xl border border-danger-100 bg-danger-50 px-3.5 py-2.5 text-[13px] font-medium text-danger-600 animate-fade-in">
-                {error}
-              </p>
+              <div className="mt-4 rounded-xl border border-danger-100 bg-danger-50 px-3.5 py-2.5 animate-fade-in">
+                <p className="text-[13px] font-medium leading-relaxed text-danger-600">{error}</p>
+                {/* Si parece un error de tipeo, se ofrece el arreglo en un clic
+                    en vez de dejar a la persona corrigiéndolo a mano. */}
+                {suggestion && current && suggestion.qid === current.id && (
+                  <button
+                    onClick={() => {
+                      setAnswers((a) => ({ ...a, [suggestion.qid]: suggestion.valor }));
+                      setError(null);
+                      setSuggestion(null);
+                    }}
+                    className="mt-2 text-[13px] font-bold underline underline-offset-2"
+                    style={{ color: accent }}
+                  >
+                    Sí, usar {suggestion.valor}
+                  </button>
+                )}
+              </div>
             )}
 
             <div className="mt-8 flex items-center gap-3">

@@ -9,6 +9,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Avatar, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/Toast";
 import { MessageQuotaCard } from "@/components/MessageQuota";
+import { BillingPanel, type BillingInfo } from "@/components/BillingPanel";
 import { PLANS as PLAN_SPECS } from "@/lib/plans";
 import { api } from "@/lib/client";
 import { cn, formatNumber } from "@/lib/utils";
@@ -65,6 +66,7 @@ export function SettingsView({
   members,
   invitations,
   usage,
+  billing,
 }: {
   business: Business;
   role: Role;
@@ -72,6 +74,7 @@ export function SettingsView({
   members: Member[];
   invitations: Invitation[];
   usage: { customers: number; forms: number; submissions: number; whatsappThisMonth: number };
+  billing: BillingInfo;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -437,57 +440,7 @@ export function SettingsView({
             </div>
           </section>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            {PLANS.map((p) => {
-              const current = business.plan === p.id;
-              return (
-                <div
-                  key={p.id}
-                  className={cn(
-                    "card relative flex flex-col p-6",
-                    p.highlight && "border-brand-300 shadow-pop",
-                    current && "ring-2 ring-brand-400",
-                  )}
-                >
-                  {p.highlight && (
-                    <span className="absolute -top-2.5 left-6 rounded-full bg-brand-600 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white">
-                      Recomendado
-                    </span>
-                  )}
-                  <div className="flex items-baseline justify-between">
-                    <h4 className="text-[15px] font-semibold text-ink-950">{p.name}</h4>
-                    {current && <Badge color="violet">Tu plan</Badge>}
-                  </div>
-                  <p className="mt-2">
-                    <span className="text-[26px] font-semibold tracking-tight text-ink-950">{p.price}</span>
-                    <span className="ml-1.5 text-xs text-ink-400">{p.period}</span>
-                  </p>
-                  <ul className="mt-4 flex-1 space-y-2">
-                    {p.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-[13px] text-ink-600">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-success-600" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button
-                    variant={current ? "secondary" : p.highlight ? "brand" : "primary"}
-                    className="mt-5 w-full"
-                    disabled={demo || current || !canAdmin}
-                    title={demo ? DEMO_HINT : undefined}
-                    loading={changingPlan === p.id}
-                    onClick={() => changePlan(p.id)}
-                  >
-                    {current ? "Plan actual" : `Pasar a ${p.name}`}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-xs leading-relaxed text-ink-400">
-            Los precios son de referencia. El cobro se activa al conectar la pasarela de pagos (Mercado Pago /
-            Stripe); la arquitectura ya contempla el campo de plan por comercio.
-          </p>
+          <BillingPanel info={billing} businessName={business.name} />
         </div>
       )}
     </div>

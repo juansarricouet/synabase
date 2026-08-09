@@ -3,6 +3,9 @@ import { listInvitations, listMembers } from "@/server/services/business";
 import { num, one } from "@/server/db";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { whatsappSentThisMonth } from "@/server/services/campaigns";
+import { paymentMethod } from "@/server/billing-config";
+import { WHATSAPP_NUMBER } from "@/lib/contact";
+import type { BillingInfo } from "@/components/BillingPanel";
 import { SettingsView } from "./SettingsView";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +23,15 @@ export default async function SettingsPage() {
     whatsappThisMonth: await whatsappSentThisMonth(tenant.business.id),
   };
 
+  const billing: BillingInfo = {
+    plan: tenant.business.plan,
+    planExpiresAt: tenant.business.plan_expires_at ?? null,
+    pendingPlan: tenant.business.pending_plan ?? null,
+    methods: { pro: paymentMethod("pro"), business: paymentMethod("business") },
+    supportPhone: WHATSAPP_NUMBER,
+    canManage: tenant.role === "owner" || tenant.role === "admin",
+  };
+
   return (
     <div>
       <PageHeader
@@ -33,6 +45,7 @@ export default async function SettingsPage() {
         members={members}
         invitations={invitations}
         usage={usage}
+        billing={billing}
       />
     </div>
   );

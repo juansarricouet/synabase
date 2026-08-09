@@ -133,3 +133,41 @@ export async function notifyNewBusiness(data: {
     </div>`,
   );
 }
+
+/**
+ * Aviso de que un comercio dice haber pagado.
+ *
+ * Es el disparador de la parte manual: llega el mail, se chequea el dinero en
+ * Mercado Pago y se confirma desde /admin.
+ */
+export async function notifyPlanRequested(data: {
+  businessName: string;
+  plan: string;
+  amountArs: number;
+  userName: string;
+  userEmail: string;
+}): Promise<void> {
+  const biz = escapeHtml(data.businessName);
+  const email = escapeHtml(data.userEmail);
+  const monto = data.amountArs.toLocaleString("es-AR");
+  const plan = escapeHtml(data.plan === "pro" ? "Pro" : "Business");
+
+  await send(
+    `💰 ${biz} dice que pagó el plan ${plan}`,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:520px;color:#111">
+      <h2 style="margin:0 0 6px;font-size:19px">Hay un pago para confirmar</h2>
+      <p style="margin:0 0 20px;color:#666;font-size:14px">
+        Chequeá que el dinero haya entrado y confirmalo desde el panel.
+      </p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Comercio</td><td style="padding:6px 0"><strong>${biz}</strong></td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Plan</td><td style="padding:6px 0">${plan}</td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Monto</td><td style="padding:6px 0"><strong>$${monto}</strong></td></tr>
+        <tr><td style="padding:6px 16px 6px 0;color:#666">Pidió</td><td style="padding:6px 0">${escapeHtml(data.userName)} · <a href="mailto:${email}">${email}</a></td></tr>
+      </table>
+      <p style="margin:24px 0 0;color:#999;font-size:12px">
+        Hasta que lo confirmes, el comercio sigue en su plan anterior.
+      </p>
+    </div>`,
+  );
+}

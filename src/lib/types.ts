@@ -64,6 +64,10 @@ export interface Business {
   brand_color: string;
   hours: string | null;
   plan: string;
+  /** Hasta cuándo vale el plan pago. Null en Free o si nunca se pagó. */
+  plan_expires_at?: string | null;
+  /** Plan pedido y todavía sin confirmar. */
+  pending_plan?: string | null;
   created_at: string;
 }
 

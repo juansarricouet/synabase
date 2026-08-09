@@ -125,6 +125,8 @@ function rowToBusiness(row: Record<string, unknown>): Business {
     brand_color: (row.brand_color as string) ?? "#c73418",
     hours: (row.hours as string) ?? null,
     plan: (row.plan as string) ?? "free",
+    plan_expires_at: (row.plan_expires_at as string) ?? null,
+    pending_plan: (row.pending_plan as string) ?? null,
     created_at: row.created_at as string,
   };
 }

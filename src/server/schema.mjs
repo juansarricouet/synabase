@@ -204,6 +204,28 @@ CREATE TABLE IF NOT EXISTS campaign_recipients (
 );
 CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON campaign_recipients(campaign_id);
 
+-- Solicitudes de cambio de plan.
+--
+-- El cobro es manual: el comercio transfiere, avisa por WhatsApp y queda una
+-- fila 'pendiente' hasta que se confirma desde el panel de administración. Se
+-- guarda el monto del momento, porque los precios de lista cambian y el
+-- historial tiene que seguir mostrando lo que se cobró.
+CREATE TABLE IF NOT EXISTS payments (
+  id           TEXT PRIMARY KEY,
+  business_id  TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  plan         TEXT NOT NULL,
+  amount_ars   INTEGER NOT NULL,
+  -- pendiente | confirmado | rechazado
+  status       TEXT NOT NULL DEFAULT 'pendiente',
+  note         TEXT,
+  requested_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  resolved_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+  resolved_at  TEXT,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_payments_biz ON payments(business_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status, created_at);
+
 -- ————— Migraciones —————
 -- Estas sentencias corren en cada arranque y tienen que poder repetirse sin
 -- efecto. Hacen falta porque CREATE TABLE IF NOT EXISTS no modifica una tabla
@@ -213,4 +235,9 @@ CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON campaign_recipients(campai
 -- El alta arrancaba en 'pro': todo comercio nuevo estrenaba el plan pago.
 ALTER TABLE businesses ALTER COLUMN plan SET DEFAULT 'free';
 ALTER TABLE businesses ALTER COLUMN brand_color SET DEFAULT '#c73418';
+
+-- Cobro manual: hasta cuándo vale el plan pago y qué plan quedó pedido pero
+-- todavía sin confirmar.
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS plan_expires_at TEXT;
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS pending_plan TEXT;
 `;

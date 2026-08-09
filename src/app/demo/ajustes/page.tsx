@@ -22,6 +22,15 @@ export default function DemoSettingsPage() {
           submissions: demoSubmissions().length,
           whatsappThisMonth: demoWhatsappThisMonth(),
         }}
+        billing={{
+          plan: business.plan,
+          planExpiresAt: null,
+          pendingPlan: null,
+          /* La demo no cobra: sin medios de pago, el panel invita a escribir. */
+          methods: {},
+          supportPhone: "",
+          canManage: false,
+        }}
       />
     </div>
   );

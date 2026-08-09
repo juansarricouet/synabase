@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   brand_color TEXT NOT NULL DEFAULT '#c73418',
   hours       TEXT,
   timezone    TEXT NOT NULL DEFAULT 'America/Argentina/Buenos_Aires',
-  plan        TEXT NOT NULL DEFAULT 'pro',
+  plan        TEXT NOT NULL DEFAULT 'free',
   created_at  TEXT NOT NULL
 );
 
@@ -203,4 +203,14 @@ CREATE TABLE IF NOT EXISTS campaign_recipients (
   created_at  TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON campaign_recipients(campaign_id);
+
+-- ————— Migraciones —————
+-- Estas sentencias corren en cada arranque y tienen que poder repetirse sin
+-- efecto. Hacen falta porque CREATE TABLE IF NOT EXISTS no modifica una tabla
+-- que ya existe: sin esto, una base creada antes conservaría los valores por
+-- defecto viejos.
+
+-- El alta arrancaba en 'pro': todo comercio nuevo estrenaba el plan pago.
+ALTER TABLE businesses ALTER COLUMN plan SET DEFAULT 'free';
+ALTER TABLE businesses ALTER COLUMN brand_color SET DEFAULT '#c73418';
 `;

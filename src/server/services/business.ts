@@ -67,7 +67,7 @@ export async function getBusiness(id: string): Promise<Business | null> {
     logo_url: (row.logo_url as string) ?? null,
     brand_color: (row.brand_color as string) ?? "#c73418",
     hours: (row.hours as string) ?? null,
-    plan: (row.plan as string) ?? "pro",
+    plan: (row.plan as string) ?? "free",
     created_at: row.created_at as string,
   };
 }

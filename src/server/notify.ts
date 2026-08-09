@@ -171,3 +171,63 @@ export async function notifyPlanRequested(data: {
     </div>`,
   );
 }
+
+interface Vencimiento {
+  name: string;
+  plan: string;
+  plan_expires_at: string;
+  owner_name: string | null;
+  owner_email: string | null;
+}
+
+function filaHtml(v: Vencimiento, vencido: boolean): string {
+  const fecha = new Date(v.plan_expires_at).toLocaleDateString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    day: "numeric",
+    month: "long",
+  });
+  const mail = v.owner_email ? escapeHtml(v.owner_email) : null;
+  return `<tr>
+    <td style="padding:8px 16px 8px 0;border-top:1px solid #eee"><strong>${escapeHtml(v.name)}</strong><br>
+      <span style="color:#888;font-size:12px">${escapeHtml(v.owner_name ?? "sin dueño")}${mail ? ` · <a href="mailto:${mail}">${mail}</a>` : ""}</span></td>
+    <td style="padding:8px 0;border-top:1px solid #eee;font-size:13px;color:${vencido ? "#c0392b" : "#b8860b"};white-space:nowrap">
+      ${escapeHtml(v.plan === "pro" ? "Pro" : "Business")} · ${vencido ? "venció" : "vence"} el ${escapeHtml(fecha)}
+    </td>
+  </tr>`;
+}
+
+/**
+ * Repaso diario de planes vencidos y por vencer.
+ *
+ * No corta el servicio de nadie: junta la lista para poder hablar con cada
+ * dueño. Sólo se manda cuando hay algo que informar.
+ */
+export async function notifyExpirations(data: {
+  vencidos: Vencimiento[];
+  porVencer: Vencimiento[];
+}): Promise<void> {
+  const { vencidos, porVencer } = data;
+  if (vencidos.length === 0 && porVencer.length === 0) return;
+
+  const bloque = (titulo: string, lista: Vencimiento[], vencido: boolean) =>
+    lista.length === 0
+      ? ""
+      : `<h3 style="margin:24px 0 8px;font-size:15px">${titulo} (${lista.length})</h3>
+         <table style="border-collapse:collapse;width:100%;font-size:14px">
+           ${lista.map((v) => filaHtml(v, vencido)).join("")}
+         </table>`;
+
+  await send(
+    vencidos.length > 0
+      ? `⚠️ ${vencidos.length} plan${vencidos.length === 1 ? "" : "es"} vencido${vencidos.length === 1 ? "" : "s"} en SynapBase`
+      : `${porVencer.length} plan${porVencer.length === 1 ? "" : "es"} por vencer en SynapBase`,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:560px;color:#111">
+      <h2 style="margin:0 0 6px;font-size:19px">Repaso de vencimientos</h2>
+      <p style="margin:0;color:#666;font-size:14px">
+        Nadie fue dado de baja: esto es para que puedas hablar con cada dueño.
+      </p>
+      ${bloque("Ya vencidos", vencidos, true)}
+      ${bloque("Vencen en los próximos días", porVencer, false)}
+    </div>`,
+  );
+}

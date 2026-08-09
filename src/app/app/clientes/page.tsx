@@ -1,6 +1,8 @@
 import { requireTenant } from "@/server/guard";
 import { getCustomerFacts } from "@/server/services/customers";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { UsageWarning } from "@/components/PlanGate";
+import { avisoDeUso } from "@/server/plan-limits";
 import { CustomersTable, type CustomerRow } from "./CustomersTable";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +26,11 @@ export default async function CustomersPage() {
     tags: c.tags,
   }));
 
+  const uso = await avisoDeUso(tenant.business.id, tenant.business.plan);
+
   return (
     <div>
+      <UsageWarning uso={uso} plan={tenant.business.plan} />
       <PageHeader
         title="Clientes"
         hint="Cada fila es una persona que escaneó tu QR. Entrá a una ficha para ver todas sus visitas, qué consume y hace cuánto no viene."

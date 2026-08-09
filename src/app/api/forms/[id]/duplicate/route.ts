@@ -2,6 +2,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { parseBody, withTenant } from "@/server/http";
 import { duplicateForm } from "@/server/services/forms";
+import { checkPuedeCrearFormulario } from "@/server/plan-limits";
 
 const schema = z.object({
   asTemplate: z.boolean().optional(),
@@ -11,6 +12,7 @@ const schema = z.object({
 export const POST = withTenant(async (tenant, req, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   const data = await parseBody(req, schema);
+  await checkPuedeCrearFormulario(tenant.business.id, tenant.business.plan);
   const form = await duplicateForm(tenant.business.id, id, data);
   return NextResponse.json({ form });
 });

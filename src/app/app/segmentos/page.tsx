@@ -4,11 +4,27 @@ import { listTags } from "@/server/services/customers";
 import { num, one, parseJson, rows } from "@/server/db";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { SegmentsView, type QuestionOption } from "./SegmentsView";
+import { PlanGate } from "@/components/PlanGate";
 
 export const dynamic = "force-dynamic";
 
 export default async function SegmentsPage() {
   const tenant = await requireTenant();
+
+  /* Sin Pro no hay segmentos: se avisa acá en vez de mostrar la herramienta y
+     que recién falle al guardar. */
+  if (tenant.business.plan === "free") {
+    return (
+      <div>
+        <PageHeader title="Segmentos" description="Agrupá clientes por comportamiento y datos reales." />
+        <PlanGate plan={tenant.business.plan} necesita="pro" titulo="Los segmentos vienen con Pro">
+          Un segmento agrupa clientes solos con reglas — por ejemplo, los que hace más de treinta
+          días que no vienen — y después se usa para mandarles una campaña.
+        </PlanGate>
+      </div>
+    );
+  }
+
   const segments = await listSegments(tenant.business.id);
   const tags = await listTags(tenant.business.id);
   const totalCustomers = num(

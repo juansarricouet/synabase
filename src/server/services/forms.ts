@@ -36,6 +36,7 @@ function rowToForm(r: Record<string, unknown>): Form {
     success_title: (r.success_title as string) ?? "",
     success_text: (r.success_text as string) ?? "",
     theme: { ...DEFAULT_THEME, ...parseJson<Partial<FormTheme>>(r.theme_json, {}) },
+    code_delivery: (r.code_delivery as Form["code_delivery"]) ?? "ambos",
     is_template: !!r.is_template,
     created_at: r.created_at as string,
     updated_at: r.updated_at as string,
@@ -194,6 +195,7 @@ const FORM_PATCH_FIELDS = [
   "welcome_text",
   "success_title",
   "success_text",
+  "code_delivery",
 ] as const;
 
 export async function updateForm(

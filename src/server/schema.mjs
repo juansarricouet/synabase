@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS forms (
   success_title TEXT NOT NULL DEFAULT '',
   success_text  TEXT NOT NULL DEFAULT '',
   theme_json    TEXT NOT NULL DEFAULT '{}',
+  -- Cómo recibe el cliente su código: pantalla | email | ambos
+  code_delivery TEXT NOT NULL DEFAULT 'ambos',
   is_template   BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
@@ -240,4 +242,7 @@ ALTER TABLE businesses ALTER COLUMN brand_color SET DEFAULT '#c73418';
 -- todavía sin confirmar.
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS plan_expires_at TEXT;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS pending_plan TEXT;
+
+-- Entrega del código de descuento por mail, para que el correo quede verificado.
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS code_delivery TEXT NOT NULL DEFAULT 'ambos';
 `;

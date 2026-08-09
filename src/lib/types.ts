@@ -45,6 +45,14 @@ export interface Form {
   success_title: string;
   success_text: string;
   theme: FormTheme;
+  /**
+   * Cómo recibe el cliente su código.
+   *
+   * `email` es lo que vuelve verificable la casilla: si el correo es falso, el
+   * código no llega y no hay beneficio. `ambos` no verifica nada, pero no deja
+   * a nadie sin su código si el mail tarda o cae en spam.
+   */
+  code_delivery: "pantalla" | "email" | "ambos";
   is_template: boolean;
   created_at: string;
   updated_at: string;

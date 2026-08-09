@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, MessageCircle, PartyPopper } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Mail, MessageCircle, PartyPopper } from "lucide-react";
 import { cn, whatsappLink } from "@/lib/utils";
 import { validarRespuesta } from "@/lib/answer-validation";
 import { api } from "@/lib/client";
@@ -27,6 +27,9 @@ interface SubmitResult {
   discount_code: string;
   first_time: boolean;
   customer_name: string;
+  code_delivery?: "pantalla" | "email" | "ambos";
+  sent_to?: string | null;
+  email_sent?: boolean;
 }
 
 export function PublicFormFlow({ form, business, slug, preview, className }: Props) {
@@ -296,16 +299,41 @@ export function PublicFormFlow({ form, business, slug, preview, className }: Pro
               {form.success_title || `¡Gracias, ${result.customer_name.split(" ")[0]}!`}
             </h2>
             <p className="mx-auto mt-2 max-w-xs text-balance text-sm leading-relaxed text-ink-500">
-              {form.success_text || "Mostrá este código en la caja para usar tu beneficio."}
+              {form.success_text ||
+                (result.code_delivery === "email" && result.email_sent
+                  ? "Abrí el mail y mostralo en la caja para usar tu beneficio."
+                  : "Mostrá este código en la caja para usar tu beneficio.")}
             </p>
 
-            <div className="mt-7 w-full max-w-xs rounded-2xl border-2 border-dashed px-6 py-5" style={{ borderColor: `${accent}66` }}>
-              <p className="text-[11px] font-medium uppercase tracking-widest text-ink-400">Tu código</p>
-              <p className="mt-1 font-mono text-[28px] font-bold tracking-wider text-ink-950">{result.discount_code}</p>
-              <p className="mt-1.5 text-[13px] font-medium" style={{ color: accent }}>
-                {form.incentive}
+            {/* Con entrega sólo por mail el código no se muestra: si estuviera
+                acá, poner una casilla falsa no tendría costo y la verificación
+                no serviría de nada. Si el envío falló se muestra igual, para no
+                dejar a nadie sin su beneficio por un problema nuestro. */}
+            {result.code_delivery === "email" && result.email_sent ? (
+              <div className="mt-7 w-full max-w-xs rounded-2xl border-2 border-dashed px-6 py-6" style={{ borderColor: `${accent}66` }}>
+                <Mail className="mx-auto size-7" style={{ color: accent }} strokeWidth={1.75} />
+                <p className="mt-3 text-[14px] font-semibold text-ink-950">Te mandamos tu código</p>
+                <p className="mt-1 break-all text-[12.5px] text-ink-500">{result.sent_to}</p>
+                <p className="mt-3 text-[13px] font-medium" style={{ color: accent }}>
+                  {form.incentive}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-7 w-full max-w-xs rounded-2xl border-2 border-dashed px-6 py-5" style={{ borderColor: `${accent}66` }}>
+                <p className="text-[11px] font-medium uppercase tracking-widest text-ink-400">Tu código</p>
+                <p className="mt-1 font-mono text-[28px] font-bold tracking-wider text-ink-950">{result.discount_code}</p>
+                <p className="mt-1.5 text-[13px] font-medium" style={{ color: accent }}>
+                  {form.incentive}
+                </p>
+              </div>
+            )}
+
+            {result.email_sent && result.code_delivery !== "email" && (
+              <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-ink-400">
+                <Mail className="size-3.5" />
+                También te lo mandamos a {result.sent_to}
               </p>
-            </div>
+            )}
 
             {/* El cliente abre el chat: el comercio queda con su número
                 verificado y con la conversación iniciada de su lado. */}

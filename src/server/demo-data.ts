@@ -1,5 +1,4 @@
 import "server-only";
-import crypto from "node:crypto";
 import type {
   Business,
   Campaign,
@@ -26,7 +25,19 @@ import { matchesRule } from "@/server/services/segments";
 
 const DAY = 86400000;
 const AR_TZ = "America/Argentina/Buenos_Aires";
-const uid = () => crypto.randomUUID();
+
+/**
+ * Identificadores estables entre un proceso y otro.
+ *
+ * No pueden ser al azar: la lista de formularios de la demo se genera al
+ * compilar y las pantallas de detalle al momento de pedirlas, en otro proceso.
+ * Con `crypto.randomUUID()` los ids no coincidían y entrar a cualquier
+ * formulario de la demo terminaba en un 404. Como `build()` arma todo siempre
+ * en el mismo orden, un contador alcanza para que cada cosa tenga siempre el
+ * mismo id.
+ */
+let contador = 0;
+const uid = () => `d0000000-0000-4000-8000-${String(++contador).padStart(12, "0")}`;
 
 function rng(seed: number) {
   let a = seed >>> 0;
@@ -184,6 +195,9 @@ function dataset(): DemoDataset {
 function build(): DemoDataset {
   const rand = rng(20260728);
   const now = Date.now();
+  /* Se reinicia por si el caché venció y hay que rearmar todo: los ids tienen
+     que salir iguales que la primera vez. */
+  contador = 0;
 
   const bizId = uid();
   const formId = uid();
@@ -268,6 +282,7 @@ function build(): DemoDataset {
       success_title: "¡Gracias por contarnos!",
       success_text: "Mostrá este código en la caja para usar tu descuento la próxima vez que vengas.",
       theme: { color: "#c73418", showLogo: true, emoji: "☕" },
+      code_delivery: "ambos",
       is_template: false,
       created_at: formCreated,
       updated_at: formCreated,
@@ -284,6 +299,7 @@ function build(): DemoDataset {
       success_title: "",
       success_text: "",
       theme: { color: "#b45309", showLogo: true, emoji: "🥐" },
+      code_delivery: "ambos",
       is_template: false,
       created_at: new Date(now - 90 * DAY).toISOString(),
       updated_at: new Date(now - 90 * DAY).toISOString(),

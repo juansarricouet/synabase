@@ -10,6 +10,7 @@ import { api } from "@/lib/client";
 import { cn } from "@/lib/utils";
 import type { Form, FormTheme, Question } from "@/lib/types";
 import { useDemoMode } from "@/components/demo/DemoMode";
+import { Hint } from "@/components/ui/Hint";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { QrPanel } from "./QrPanel";
 
@@ -154,6 +155,51 @@ export function FormBuilder({
                     placeholder="Ej.: 10% de descuento en tu próxima visita"
                   />
                 </Field>
+              </section>
+
+              <section className="card space-y-3 p-5">
+                <h3 className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-ink-950">
+                  Cómo recibe el código
+                  <Hint>
+                    Mandarlo sólo por mail hace que la casilla quede verificada sola: si es falsa, el
+                    código no llega y no hay beneficio.
+                  </Hint>
+                </h3>
+                {(
+                  [
+                    ["ambos", "Pantalla y mail", "Lo ve al terminar y además le llega. Lo más seguro para no dejar a nadie sin su beneficio."],
+                    ["email", "Solo por mail", "No se muestra en pantalla. Es lo que vuelve verificable el correo, pero necesita que el mail llegue."],
+                    ["pantalla", "Solo en pantalla", "Como antes. No se manda ningún mail."],
+                  ] as const
+                ).map(([valor, titulo, texto]) => (
+                  <label
+                    key={valor}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition",
+                      form.code_delivery === valor
+                        ? "border-brand-400 bg-brand-50/60 ring-1 ring-brand-200"
+                        : "border-line hover:border-ink-300",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="code_delivery"
+                      className="mt-0.5 accent-brand-600"
+                      checked={form.code_delivery === valor}
+                      onChange={() => patchLocal({ code_delivery: valor })}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[13.5px] font-semibold text-ink-950">{titulo}</span>
+                      <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-500">{texto}</span>
+                    </span>
+                  </label>
+                ))}
+                {form.code_delivery !== "pantalla" && (
+                  <p className="rounded-xl border border-warning-100 bg-warning-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warning-600">
+                    Para que el mail salga hace falta tener el envío configurado. Si falla, el código
+                    se muestra en pantalla igual: nadie se queda sin su beneficio.
+                  </p>
+                )}
               </section>
 
               <section className="card space-y-4 p-5">

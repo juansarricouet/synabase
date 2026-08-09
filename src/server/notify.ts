@@ -9,7 +9,13 @@ import { log } from "./log";
  * nadie debería quedarse sin poder registrarse porque falló un mail.
  */
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
+/**
+ * Endpoint del proveedor de mail.
+ *
+ * Se puede sobreescribir por entorno para apuntar a otro proveedor compatible
+ * o a un receptor local cuando se prueba el envío sin mandar nada de verdad.
+ */
+const RESEND_ENDPOINT = process.env.RESEND_ENDPOINT ?? "https://api.resend.com/emails";
 
 /** Casilla que recibe los avisos. Sin esto, no se manda nada. */
 function notifyTo(): string | null {
@@ -23,6 +29,36 @@ function notifyTo(): string | null {
  */
 function notifyFrom(): string {
   return process.env.NOTIFY_EMAIL_FROM ?? "SynapBase <onboarding@resend.dev>";
+}
+
+/**
+ * Envío a una dirección cualquiera.
+ *
+ * Se usa para escribirle a los clientes del comercio, no sólo a la casilla de
+ * administración. Devuelve si salió, porque de eso depende que al cliente le
+ * llegue su código: acá el resultado sí importa.
+ */
+export async function sendMailTo(to: string, subject: string, html: string): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    log.info("mail.skipped", { subject, reason: "falta RESEND_API_KEY" });
+    return false;
+  }
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: notifyFrom(), to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      log.error("mail.failed", { subject, status: res.status, body: await res.text() });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    log.error("mail.error", { subject, message: err instanceof Error ? err.message : String(err) });
+    return false;
+  }
 }
 
 async function send(subject: string, html: string): Promise<void> {
@@ -228,6 +264,62 @@ export async function notifyExpirations(data: {
       </p>
       ${bloque("Ya vencidos", vencidos, true)}
       ${bloque("Vencen en los próximos días", porVencer, false)}
+    </div>`,
+  );
+}
+
+/**
+ * El código de descuento, al mail que dejó el cliente.
+ *
+ * Va con el resumen de lo que respondió, como el acuse de un formulario de
+ * Google: sirve de comprobante para mostrar en el mostrador y hace que el
+ * correo quede verificado solo — si es falso, el código no llega.
+ */
+export async function sendDiscountCode(data: {
+  to: string;
+  customerName: string;
+  businessName: string;
+  code: string;
+  incentive: string;
+  answers: { label: string; value: string }[];
+}): Promise<boolean> {
+  const negocio = escapeHtml(data.businessName);
+  const nombre = escapeHtml(data.customerName.split(" ")[0] ?? data.customerName);
+  const code = escapeHtml(data.code);
+
+  const resumen = data.answers
+    .filter((a) => a.value)
+    .map(
+      (a) => `<tr>
+        <td style="padding:7px 16px 7px 0;color:#777;font-size:13px;vertical-align:top">${escapeHtml(a.label)}</td>
+        <td style="padding:7px 0;font-size:13px;color:#111">${escapeHtml(a.value)}</td>
+      </tr>`,
+    )
+    .join("");
+
+  return sendMailTo(
+    data.to,
+    `Tu código en ${data.businessName}: ${data.code}`,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;color:#111">
+      <p style="margin:0 0 4px;font-size:14px;color:#777">${negocio}</p>
+      <h1 style="margin:0 0 18px;font-size:22px">¡Gracias, ${nombre}!</h1>
+
+      <div style="border:2px dashed #ff5a45;border-radius:16px;padding:22px;text-align:center;background:#fff5f2">
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#999">Tu código</p>
+        <p style="margin:0;font-size:30px;font-weight:800;letter-spacing:3px;font-family:ui-monospace,monospace;color:#111">${code}</p>
+        <p style="margin:10px 0 0;font-size:14px;font-weight:600;color:#c73418">${escapeHtml(data.incentive)}</p>
+      </div>
+
+      <p style="margin:20px 0 0;font-size:14px;line-height:1.6;color:#444">
+        Mostrá este mail en la caja para usar tu beneficio.
+      </p>
+
+      ${resumen ? `<h2 style="margin:28px 0 6px;font-size:14px;color:#111">Lo que respondiste</h2>
+      <table style="border-collapse:collapse;width:100%">${resumen}</table>` : ""}
+
+      <p style="margin:28px 0 0;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:14px">
+        Recibís este mail porque completaste el formulario de ${negocio}. Impulsado por SynapBase.
+      </p>
     </div>`,
   );
 }

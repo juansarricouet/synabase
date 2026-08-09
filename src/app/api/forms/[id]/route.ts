@@ -18,6 +18,7 @@ const patchSchema = z.object({
   welcome_text: z.string().max(400).optional(),
   success_title: z.string().max(120).optional(),
   success_text: z.string().max(400).optional(),
+  code_delivery: z.enum(["pantalla", "email", "ambos"]).optional(),
   theme: z
     .object({
       color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),

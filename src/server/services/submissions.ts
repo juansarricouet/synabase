@@ -16,6 +16,7 @@ import { ApiError } from "../http";
 import { log } from "../log";
 import { getPublicFormBySlug } from "./forms";
 import { validarRespuesta } from "@/lib/answer-validation";
+import { sendDiscountCode } from "../notify";
 import type { Question, SubmissionRow } from "@/lib/types";
 
 /* ————— Registro de escaneos ————— */
@@ -99,6 +100,12 @@ export interface SubmitResult {
   discount_code: string;
   first_time: boolean;
   customer_name: string;
+  /** Cómo se le entrega el código, según lo que eligió el comercio. */
+  code_delivery: "pantalla" | "email" | "ambos";
+  /** Casilla a la que se mandó, para poder mostrarla en pantalla. */
+  sent_to?: string | null;
+  /** `false` si el envío falló: el formulario muestra el código igual. */
+  email_sent?: boolean;
 }
 
 export async function submitForm(
@@ -153,7 +160,7 @@ export async function submitForm(
   const now = new Date();
   const nowStr = now.toISOString();
 
-  return tx(async (client) => {
+  const resultado = await tx(async (client) => {
     // Resolución de identidad: teléfono → email → nombre (dentro del negocio)
     let customer = phone
       ? await one<{ id: string }>(
@@ -240,6 +247,40 @@ export async function submitForm(
     log.info("submission.created", { businessId: business.id, formId: form.id, firstTime });
     return { discount_code: discountCode, first_time: firstTime, customer_name: name };
   });
+
+  /* El mail se manda después de cerrar la transacción: si el proveedor tarda o
+     falla, el registro ya quedó guardado igual. */
+  let emailSent = false;
+  const quiereMail = form.code_delivery === "email" || form.code_delivery === "ambos";
+  if (quiereMail && email) {
+    const resumen = questions
+      .filter((q) => !q.maps_to || q.maps_to === "product" || q.maps_to === "amount")
+      .map((q) => ({ label: q.label, value: textoDeRespuesta(clean.get(q.id)) }));
+
+    emailSent = await sendDiscountCode({
+      to: email,
+      customerName: resultado.customer_name,
+      businessName: business.name,
+      code: resultado.discount_code,
+      incentive: form.incentive,
+      answers: resumen,
+    });
+  }
+
+  return {
+    ...resultado,
+    code_delivery: form.code_delivery,
+    sent_to: emailSent ? email : null,
+    email_sent: emailSent,
+  };
+}
+
+/** Cómo se escribe una respuesta en el resumen del mail. */
+function textoDeRespuesta(valor: unknown): string {
+  if (valor === null || valor === undefined) return "";
+  if (typeof valor === "boolean") return valor ? "Sí" : "No";
+  if (Array.isArray(valor)) return valor.join(", ");
+  return String(valor);
 }
 
 /* ————— Lectura para el panel ————— */

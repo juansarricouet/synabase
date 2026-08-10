@@ -32,23 +32,72 @@ function notifyFrom(): string {
 }
 
 /**
+ * La dirección sola, sin el nombre que se muestra.
+ *
+ * `NOTIFY_EMAIL_FROM` se escribe de las dos formas: `Nombre <a@b.com>` o
+ * `a@b.com` pelado.
+ */
+function fromAddress(): string {
+  const m = notifyFrom().match(/<([^>]+)>/);
+  return (m ? m[1] : notifyFrom()).trim();
+}
+
+/**
+ * Nombre para mostrar, apto para un encabezado de mail.
+ *
+ * El nombre del comercio lo escribe quien se registra, así que no se puede
+ * confiar en él: un salto de línea ahí adentro permitiría colgar encabezados
+ * extra al mensaje. Se descartan los saltos, las comillas y los ángulos, y se
+ * recorta el largo.
+ */
+function nombreParaEncabezado(nombre: string): string {
+  const limpio = nombre
+    .replace(/[\r\n]+/g, " ")
+    .replace(/["<>\\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
+  return limpio;
+}
+
+/**
+ * Remitente para un comercio.
+ *
+ * Al cliente le llega de parte del comercio donde estuvo, no de SynapBase: en
+ * la bandeja de entrada ve “Inmigrante Resto Bar”, que es lo que reconoce. La
+ * dirección sigue siendo la nuestra —es la única que está verificada—, sólo
+ * cambia el nombre visible.
+ */
+function fromParaComercio(businessName: string): string {
+  const nombre = nombreParaEncabezado(businessName);
+  return nombre ? `${nombre} <${fromAddress()}>` : notifyFrom();
+}
+
+/**
  * Envío a una dirección cualquiera.
  *
  * Se usa para escribirle a los clientes del comercio, no sólo a la casilla de
  * administración. Devuelve si salió, porque de eso depende que al cliente le
  * llegue su código: acá el resultado sí importa.
  */
-export async function sendMailTo(to: string, subject: string, html: string): Promise<boolean> {
+export async function sendMailTo(
+  to: string,
+  subject: string,
+  html: string,
+  /** Nombre visible del remitente. Sin esto sale a nombre de SynapBase. */
+  fromName?: string,
+): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     log.info("mail.skipped", { subject, reason: "falta RESEND_API_KEY" });
     return false;
   }
   try {
+    const from = fromName ? fromParaComercio(fromName) : notifyFrom();
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: notifyFrom(), to: [to], subject, html }),
+      body: JSON.stringify({ from, to: [to], subject, html }),
     });
     if (!res.ok) {
       log.error("mail.failed", { subject, status: res.status, body: await res.text() });
@@ -321,5 +370,8 @@ export async function sendDiscountCode(data: {
         Recibís este mail porque completaste el formulario de ${negocio}. Impulsado por SynapBase.
       </p>
     </div>`,
+    /* Sale a nombre del comercio: el cliente estuvo ahí y lo reconoce en la
+       bandeja de entrada. “SynapBase” no le dice nada. */
+    data.businessName,
   );
 }

@@ -450,7 +450,21 @@ input[type="range"]::-webkit-slider-thumb:hover {
  * Titular por líneas: cada línea va dentro de un `.line-mask` y sube desde
  * abajo. La máscara recorta el desborde para que parezca que aparece.
  */
-.line-mask { display: block; overflow: hidden; }
+/*
+ * La máscara recorta a la altura de la caja de línea, y los descendentes —la
+ * g, la y, la p— bajan más que eso: en «el gancho» y «el negocio» la panza de
+ * la g quedaba cortada al ras. Se le da aire abajo y se recupera con el margen
+ * negativo, así el titular no empuja lo que sigue.
+ *
+ * El respiro es chico frente al 105% que la línea viaja al animarse, así que
+ * antes de subir sigue estando escondida.
+ */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
 /*
  * La línea sube apenas se monta. Antes esperaba a que el bloque padre tuviera
  * `.rv.in`, así que en las pantallas sin scroll-reveal —login, registro— el

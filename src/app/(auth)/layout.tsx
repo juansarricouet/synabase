@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
-import { SynapseNetwork } from "@/components/landing/SynapseNetwork";
 import { COPY, planPrice } from "@/lib/landing-copy";
 import { PLANS } from "@/lib/plans";
 
 const t = COPY.es;
-
-/** Alturas de las barritas del panel flotante, en porcentaje. */
-const BARS = [22, 30, 26, 41, 38, 52, 47, 63, 58, 76, 71, 94];
 
 /** Mismo wordmark que la landing: minúsculas, bold y punto en coral. */
 function Wordmark({ className = "" }: { className?: string }) {
@@ -55,63 +50,55 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </p>
       </div>
 
-      {/* ————— Panel de marca ————— */}
-      <aside className="relative hidden min-w-0 overflow-hidden bg-inkblack lg:flex lg:flex-col lg:justify-center">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(680px 460px at 60% 8%, rgb(255 90 69 / 0.22), transparent 60%), radial-gradient(520px 400px at 5% 100%, rgb(199 52 24 / 0.2), transparent 62%)",
-          }}
-        />
+      {/*
+        ————— Panel de marca —————
 
-        <div className="stagger relative px-12 py-14 xl:px-14">
-          <p className="font-display text-[13px] font-bold tracking-tight text-coral">
+        Negro plano y quieto, a propósito. Antes tenía la red de sinapsis
+        dibujándose sola y una ficha con números subiendo: se veía complicado,
+        que es lo contrario de lo que se vende acá. Lo que queda se entiende de
+        una sola lectura, sin que nada se mueva.
+      */}
+      <aside className="relative hidden min-w-0 overflow-hidden bg-inkblack lg:flex lg:flex-col lg:justify-center">
+        <div className="relative px-12 py-14 xl:px-14">
+          <a
+            href="https://www.synapse.place/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display text-[13px] font-bold tracking-tight text-white/45 transition-colors hover:text-white"
+          >
             Un producto de synapse.
-          </p>
+          </a>
           <h2 className="display-title mt-3.5 max-w-[14ch] text-[32px] text-white xl:text-[36px]">
-            Cada visita, una conexión más
+            Cada visita, un cliente con nombre
           </h2>
 
-          {/* La red de la marca, dibujándose sola */}
-          <div className="relative mt-2">
-            <SynapseNetwork className="mx-auto max-w-[420px]" />
-
-            {/* Ficha flotante: el resultado de todas esas conexiones */}
-            <div className="absolute -bottom-2 left-0 w-[224px] rounded-2xl border border-white/12 bg-white/[0.06] p-4 backdrop-blur-md">
-              <p className="text-[11px] font-medium uppercase tracking-widest text-white/40">
-                Tu base hoy
-              </p>
-              <AnimatedNumber
-                value={1248}
-                duration={1600}
-                className="font-display mt-1 block text-[30px] font-extrabold leading-none tracking-[-0.03em] text-white"
-              />
-              <p className="mt-1 text-[12px] text-white/45">clientes con nombre</p>
-              <div className="mt-3 flex h-9 items-end gap-[3px]">
-                {BARS.map((h, i) => (
-                  <div
-                    key={i}
-                    className="syn-bar flex-1 rounded-[2px]"
-                    style={{
-                      height: `${h}%`,
-                      background: i >= BARS.length - 3 ? "var(--color-coral)" : "rgb(255 255 255 / 0.22)",
-                      ["--i" as string]: i,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <p className="body-copy mt-12 max-w-[42ch] text-[14.5px] text-white/50">
+          <p className="body-copy mt-5 max-w-[42ch] text-[14.5px] text-white/50">
             Un QR en tu local convierte cada visita en un cliente conocido: quién es, qué consume y
             cuándo vuelve. Sin planillas. Sin adivinar.
           </p>
 
+          {/* Los tres pasos, que es todo lo que hay que entender para empezar. */}
+          <ol className="mt-10 space-y-5">
+            {[
+              ["Pegás el QR en tu local", "Te lo damos listo para imprimir."],
+              ["El cliente responde y se lleva su descuento", "Treinta segundos desde su celular."],
+              ["Te quedás con el dato", "Su nombre, qué consumió y cuándo volvió."],
+            ].map(([titulo, detalle], i) => (
+              <li key={titulo} className="flex gap-4">
+                <span className="font-display mt-px flex size-6 shrink-0 items-center justify-center rounded-full border border-white/20 text-[12px] font-bold text-white/70">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-white">{titulo}</p>
+                  <p className="mt-0.5 text-[13px] text-white/40">{detalle}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
           {/* Los planes, en una tira compacta */}
-          <div className="mt-8">
-            <p className="font-display text-[12px] font-bold tracking-tight text-coral">
+          <div className="mt-10">
+            <p className="font-display text-[12px] font-bold tracking-tight text-white/45">
               En qué se diferencian los planes
             </p>
             <div className="mt-3 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -128,11 +115,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   <div
                     key={p.name}
                     className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                      p.highlight ? "bg-coral/[0.09]" : "hover:bg-white/[0.03]"
+                      p.highlight ? "bg-white/[0.07]" : "hover:bg-white/[0.03]"
                     }`}
                   >
                     <span
-                      className={`size-1.5 shrink-0 rounded-full ${p.highlight ? "bg-coral" : "bg-white/25"}`}
+                      className={`size-1.5 shrink-0 rounded-full ${p.highlight ? "bg-white/70" : "bg-white/25"}`}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-[13px] font-bold text-white">{p.name}</p>

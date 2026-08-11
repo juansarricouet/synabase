@@ -15,14 +15,6 @@ function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
-function Eyebrow({ n, children }: { n: string; children: React.ReactNode }) {
-  return (
-    <p className="font-display text-[13px] font-bold tracking-tight text-coral">
-      {n} — {children}
-    </p>
-  );
-}
-
 function CheckItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-3 text-left">
@@ -64,16 +56,12 @@ function Faq({ q, a }: { q: string; a: React.ReactNode }) {
  * texto fuera de la pantalla.
  */
 function FeatureSection({
-  n,
-  eyebrow,
   title,
   items,
   mock,
   flip = false,
   id,
 }: {
-  n: string;
-  eyebrow: string;
   title: string;
   items: string[];
   mock: React.ReactNode;
@@ -84,8 +72,7 @@ function FeatureSection({
     <section id={id} className="scroll-mt-24 border-t border-inkblack/8 py-16 sm:py-24 lg:py-28">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 lg:grid-cols-2 lg:gap-16">
         <div className={`rv min-w-0 text-center lg:text-left ${flip ? "rv-right lg:order-2" : "rv-left"}`}>
-          <Eyebrow n={n}>{eyebrow}</Eyebrow>
-          <h2 className="display-title mx-auto mt-4 max-w-[13ch] text-[30px] sm:text-[38px] lg:mx-0 lg:text-[42px]">
+          <h2 className="display-title mx-auto max-w-[13ch] text-[30px] sm:text-[38px] lg:mx-0 lg:text-[42px]">
             {title}
           </h2>
           <ul className="mx-auto mt-8 inline-flex max-w-md flex-col gap-4 lg:mx-0 lg:flex lg:max-w-none">
@@ -183,10 +170,17 @@ export function Landing({ lang }: { lang: Lang }) {
       <section className="relative px-6 pb-16 pt-16 sm:pt-24 lg:pt-28">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="rv font-display inline-flex items-center gap-2 text-[13px] font-bold tracking-tight text-coral">
+            {/* Lleva a la agencia que está atrás del producto: quien quiera
+                saber quiénes somos tiene dónde ir sin salir a buscarlo. */}
+            <a
+              href="https://www.synapse.place/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rv font-display inline-flex items-center gap-2 text-[13px] font-bold tracking-tight text-coral transition-opacity hover:opacity-70"
+            >
               <span className="live-dot size-1.5 shrink-0 rounded-full bg-coral" />
               <span>{t.hero.eyebrow}</span>
-            </p>
+            </a>
             <LinesTitle
               lines={t.hero.titleLines}
               className="rv display-title mx-auto mt-6 max-w-[16ch] text-[36px] sm:text-[52px] lg:text-[64px]"
@@ -263,13 +257,11 @@ export function Landing({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      {/* ————— Secciones numeradas ————— */}
+      {/* ————— Secciones de producto ————— */}
       {t.features.map((f, i) => (
         <FeatureSection
           key={f.n}
           id={i === 0 ? "captura" : undefined}
-          n={f.n}
-          eyebrow={f.eyebrow}
           title={f.title}
           items={f.items}
           mock={mocks[i]}
@@ -392,8 +384,7 @@ export function Landing({ lang }: { lang: Lang }) {
       <section id="preguntas" className="scroll-mt-24 border-t border-inkblack/8 px-6 py-16 sm:py-24 lg:py-28">
         <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
           <div className="rv rv-left min-w-0 text-center lg:sticky lg:top-28 lg:self-start lg:text-left">
-            <Eyebrow n="05">{t.faq.eyebrow}</Eyebrow>
-            <h2 className="display-title mx-auto mt-4 max-w-[12ch] text-[30px] sm:text-[38px] lg:mx-0 lg:text-[42px]">
+            <h2 className="display-title mx-auto max-w-[12ch] text-[30px] sm:text-[38px] lg:mx-0 lg:text-[42px]">
               {t.faq.title}
             </h2>
             <p className="body-copy mx-auto mt-5 max-w-[36ch] text-[15px] text-inkblack/60 lg:mx-0">
@@ -427,8 +418,7 @@ export function Landing({ lang }: { lang: Lang }) {
           <div className="rv rounded-3xl border border-inkblack/12 bg-white p-7 sm:p-12">
             <div className="grid items-center gap-9 text-center lg:grid-cols-[1.1fr_0.9fr] lg:text-left">
               <div className="min-w-0">
-                <Eyebrow n="06">{t.contact.eyebrow}</Eyebrow>
-                <h2 className="display-title mx-auto mt-4 max-w-[16ch] text-[27px] sm:text-[34px] lg:mx-0 lg:text-[38px]">
+                <h2 className="display-title mx-auto max-w-[16ch] text-[27px] sm:text-[34px] lg:mx-0 lg:text-[38px]">
                   {t.contact.title}
                 </h2>
                 <p className="body-copy mx-auto mt-5 max-w-[46ch] text-[15px] text-inkblack/65 lg:mx-0">

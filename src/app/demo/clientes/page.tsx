@@ -5,6 +5,7 @@ import { CustomersTable, type CustomerRow } from "@/app/app/clientes/CustomersTa
 export default function DemoCustomersPage() {
   const rows: CustomerRow[] = demoCustomerFacts().map((c) => ({
     id: c.id, name: c.name, phone: c.phone, email: c.email, gender: c.gender, age: c.age,
+    origin: c.origin,
     visits: c.visits, first_visit_at: c.first_visit_at, last_visit_at: c.last_visit_at,
     favorite_product: c.favorite_product, total_spent: c.total_spent, tags: c.tags,
   }));

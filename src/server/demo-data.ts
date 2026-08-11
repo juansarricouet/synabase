@@ -4,6 +4,7 @@ import type {
   Campaign,
   DashboardStats,
   Form,
+  Origin,
   Question,
   Segment,
   SegmentRule,
@@ -146,6 +147,7 @@ interface RawCustomer {
   phone: string | null;
   email: string | null;
   notes: string | null;
+  origin: Origin;
   first_visit_at: string;
   last_visit_at: string;
   visits: number;
@@ -283,23 +285,27 @@ function build(): DemoDataset {
       success_text: "Mostrá este código en la caja para usar tu descuento la próxima vez que vengas.",
       theme: { color: "#c73418", showLogo: true, emoji: "☕" },
       code_delivery: "ambos",
+      origin: "local",
       is_template: false,
       created_at: formCreated,
       updated_at: formCreated,
     },
     {
+      /* El segundo QR es el que va en la bolsa del delivery: el que convierte
+         a un cliente de la app de pedidos en un cliente del comercio. */
       id: form2Id,
       business_id: bizId,
-      name: "Encuesta brunch de fin de semana",
-      slug: "martina-brunch",
-      status: "paused",
-      incentive: "Una medialuna de regalo",
-      welcome_title: "¿Un minuto para el brunch? 🥐",
-      welcome_text: "Queremos armar la mejor carta de brunch de Palermo. Ayudanos con tu opinión.",
+      name: "QR para pedidos online",
+      slug: "martina-delivery",
+      status: "active",
+      incentive: "10% en tu próxima visita al local",
+      welcome_title: "¿Pediste por app? Esto es para vos 🛵",
+      welcome_text: "Dejanos tus datos y llevate un descuento para cuando vengas al local.",
       success_title: "",
       success_text: "",
-      theme: { color: "#b45309", showLogo: true, emoji: "🥐" },
+      theme: { color: "#b45309", showLogo: true, emoji: "🛵" },
       code_delivery: "ambos",
+      origin: "online",
       is_template: false,
       created_at: new Date(now - 90 * DAY).toISOString(),
       updated_at: new Date(now - 90 * DAY).toISOString(),
@@ -357,6 +363,9 @@ function build(): DemoDataset {
       phone: rand() < 0.62 ? `115${String(Math.floor(1000000 + rand() * 8999999))}` : null,
       email: rand() < 0.55 ? `${normalizeForEmail(first)}.${normalizeForEmail(last)}${Math.floor(rand() * 90) + 10}@gmail.com` : null,
       notes: null,
+      /* El QR de los pedidos online se puso hace unos meses, así que sólo lo
+         escaneó gente que llegó después. Los más antiguos son todos del local. */
+      origin: seniorityDays < 130 && rand() < 0.38 ? "online" : "local",
       first_visit_at: "",
       last_visit_at: "",
       visits,
@@ -565,6 +574,7 @@ export function demoCustomerFacts(): CustomerFacts[] {
       gender: c.gender,
       age: c.age,
       notes: c.notes,
+      origin: c.origin,
       first_visit_at: c.first_visit_at,
       last_visit_at: c.last_visit_at,
       visits: c.visits,

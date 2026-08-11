@@ -13,6 +13,7 @@ function rowToCustomer(r: Record<string, unknown>): Customer {
     gender: (r.gender as string) ?? null,
     age: (r.age as number) ?? null,
     notes: (r.notes as string) ?? null,
+    origin: (r.origin as Customer["origin"]) ?? "local",
     first_visit_at: r.first_visit_at as string,
     last_visit_at: r.last_visit_at as string,
     visits: Number(r.visits),

@@ -206,10 +206,14 @@ export async function submitForm(
     } else {
       customerId = uid();
       firstTime = true;
+      /* El origen se toma del QR que escaneó y queda fijo: si entró por el QR
+         de un pedido a domicilio, ese cliente se ganó ahí. Que después venga
+         al local es justamente lo que el comercio quiere medir, así que
+         pisarlo borraría el dato que importa. */
       await run(
-        `INSERT INTO customers (id, business_id, name, phone, email, gender, age, first_visit_at, last_visit_at, visits, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1, $10)`,
-        [customerId, business.id, name, phone, email, gender, age, nowStr, nowStr, nowStr],
+        `INSERT INTO customers (id, business_id, name, phone, email, gender, age, origin, first_visit_at, last_visit_at, visits, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, $11)`,
+        [customerId, business.id, name, phone, email, gender, age, form.origin, nowStr, nowStr, nowStr],
         client,
       );
     }

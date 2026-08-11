@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Users } from "
 import { Avatar, EmptyState, SearchInput } from "@/components/ui/misc";
 import { Badge, type BadgeColor } from "@/components/ui/Badge";
 import { cn, daysSince, downloadBlob, formatMoney, formatNumber, timeAgo } from "@/lib/utils";
-import type { Tag } from "@/lib/types";
+import type { Origin, Tag } from "@/lib/types";
 
 export interface CustomerRow {
   id: string;
@@ -15,6 +15,7 @@ export interface CustomerRow {
   email: string | null;
   gender: string | null;
   age: number | null;
+  origin: Origin;
   visits: number;
   first_visit_at: string;
   last_visit_at: string;
@@ -24,7 +25,7 @@ export interface CustomerRow {
 }
 
 type SortKey = "name" | "visits" | "last_visit_at" | "total_spent" | "first_visit_at";
-type QuickFilter = "todos" | "frecuentes" | "inactivos" | "nuevos" | "con_contacto";
+type QuickFilter = "todos" | "frecuentes" | "inactivos" | "nuevos" | "con_contacto" | "delivery";
 
 const FILTERS: { value: QuickFilter; label: string }[] = [
   { value: "todos", label: "Todos" },
@@ -32,6 +33,7 @@ const FILTERS: { value: QuickFilter; label: string }[] = [
   { value: "inactivos", label: "Inactivos 30 días" },
   { value: "nuevos", label: "Nuevos (30 días)" },
   { value: "con_contacto", label: "Con contacto" },
+  { value: "delivery", label: "Del delivery" },
 ];
 
 const PAGE_SIZE = 25;
@@ -67,6 +69,9 @@ export function CustomersTable({ rows, basePath = "/app" }: { rows: CustomerRow[
         break;
       case "con_contacto":
         out = out.filter((r) => r.phone || r.email);
+        break;
+      case "delivery":
+        out = out.filter((r) => r.origin === "online");
         break;
     }
     out.sort((a, b) => {

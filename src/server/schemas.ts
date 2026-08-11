@@ -11,6 +11,7 @@ export const ruleSchema = z.object({
     "product",
     "favorite_product",
     "total_spent",
+    "origin",
     "has_phone",
     "has_email",
     "tag",

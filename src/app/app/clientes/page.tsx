@@ -18,6 +18,7 @@ export default async function CustomersPage() {
     email: c.email,
     gender: c.gender,
     age: c.age,
+    origin: c.origin,
     visits: c.visits,
     first_visit_at: c.first_visit_at,
     last_visit_at: c.last_visit_at,

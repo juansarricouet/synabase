@@ -61,6 +61,12 @@ export function matchesRule(c: CustomerFacts, rule: SegmentRule): boolean {
       if (rule.op === "gte") return c.total_spent >= Number(rule.value);
       return c.total_spent <= Number(rule.value);
     }
+    case "origin": {
+      /* Separa a los que se ganaron por delivery de los del local. Es la base
+         para escribirle sólo a quien todavía no pisó el comercio. */
+      if (rule.op === "neq") return c.origin !== String(rule.value);
+      return c.origin === String(rule.value);
+    }
     case "has_phone":
       return rule.value === false ? !c.phone : !!c.phone;
     case "has_email":

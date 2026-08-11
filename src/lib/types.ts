@@ -33,6 +33,15 @@ export interface FormTheme {
   emoji: string;
 }
 
+/**
+ * De dónde viene un cliente.
+ *
+ * `local` es quien escaneó el QR estando en el comercio. `online` es quien lo
+ * escaneó desde un pedido a domicilio: ese venía siendo cliente de la
+ * plataforma de pedidos, y recién ahora pasa a estar en la base del comercio.
+ */
+export type Origin = "local" | "online";
+
 export interface Form {
   id: string;
   business_id: string;
@@ -53,6 +62,15 @@ export interface Form {
    * a nadie sin su código si el mail tarda o cae en spam.
    */
   code_delivery: "pantalla" | "email" | "ambos";
+  /**
+   * Dónde se escanea este QR.
+   *
+   * `online` es el que va en la bolsa del delivery o impreso en el pedido de
+   * una app: separa a quien llegó por una plataforma de quien entró al local.
+   * Esa diferencia es la que le importa al comercio, porque el cliente de la
+   * plataforma es el que todavía no era suyo.
+   */
+  origin: Origin;
   is_template: boolean;
   created_at: string;
   updated_at: string;
@@ -94,6 +112,8 @@ export interface Customer {
   gender: string | null;
   age: number | null;
   notes: string | null;
+  /** Por dónde entró la primera vez. No cambia aunque después venga al local. */
+  origin: Origin;
   first_visit_at: string;
   last_visit_at: string;
   visits: number;
@@ -127,6 +147,7 @@ export type SegmentField =
   | "product"
   | "favorite_product"
   | "total_spent"
+  | "origin"
   | "has_phone"
   | "has_email"
   | "tag"

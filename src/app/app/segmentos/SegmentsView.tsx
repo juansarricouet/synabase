@@ -30,6 +30,7 @@ const FIELD_DEFS: { value: SegmentRule["field"]; label: string }[] = [
   { value: "total_spent", label: "Total gastado ($)" },
   { value: "age", label: "Edad" },
   { value: "gender", label: "Género" },
+  { value: "origin", label: "De dónde llegó" },
   { value: "has_phone", label: "Tiene teléfono" },
   { value: "has_email", label: "Tiene email" },
   { value: "tag", label: "Etiqueta" },
@@ -56,6 +57,18 @@ const PRESETS: { label: string; name: string; description: string; rules: Segmen
     rules: [{ field: "visits", op: "eq", value: 1 }],
   },
   {
+    /* El caso que justifica el QR en la bolsa: gente que te compró por una
+       app pero todavía no entró al local. Traerlos es sacarle el cliente a
+       la plataforma. */
+    label: "🛵 Del delivery, nunca vinieron",
+    name: "Del delivery, nunca vinieron",
+    description: "Te compraron por app pero todavía no pisaron el local",
+    rules: [
+      { field: "origin", op: "eq", value: "online" },
+      { field: "visits", op: "eq", value: 1 },
+    ],
+  },
+  {
     label: "📱 Contactables por WhatsApp",
     name: "Contactables por WhatsApp",
     description: "Dejaron su teléfono",
@@ -69,6 +82,7 @@ function defaultRule(field: SegmentRule["field"]): SegmentRule {
     case "last_visit_days": return { field, op: "gte", value: 30 };
     case "age": return { field, op: "between", min: 18, max: 35 };
     case "gender": return { field, op: "eq", value: "Femenino" };
+    case "origin": return { field, op: "eq", value: "online" };
     case "total_spent": return { field, op: "gte", value: 10000 };
     case "has_phone":
     case "has_email": return { field, op: "eq", value: true };
@@ -465,6 +479,17 @@ function RuleRow({
         </>
       )}
 
+      {rule.field === "origin" && (
+        <select
+          value={String(rule.value ?? "online")}
+          onChange={(e) => onChange({ ...rule, op: "eq", value: e.target.value })}
+          className="h-8.5 rounded-lg border border-line-strong/80 bg-white px-2.5 text-[13px] outline-none focus:border-brand-500"
+        >
+          <option value="online">Pedidos online</option>
+          <option value="local">El local</option>
+        </select>
+      )}
+
       {(rule.field === "has_phone" || rule.field === "has_email") && (
         <select
           value={rule.value === false ? "no" : "si"}
@@ -540,6 +565,7 @@ function describeRules(r: SegmentRule, tags: Tag[], questions: QuestionOption[])
     case "product": return `Consumió "${r.value}"`;
     case "favorite_product": return `Favorito: "${r.value}"`;
     case "total_spent": return `Gastó ${ops[r.op]} $${formatNumber(Number(r.value ?? 0))}`;
+    case "origin": return r.value === "online" ? "Llegó por pedidos online" : "Llegó al local";
     case "has_phone": return r.value === false ? "Sin teléfono" : "Con teléfono";
     case "has_email": return r.value === false ? "Sin email" : "Con email";
     case "tag": {

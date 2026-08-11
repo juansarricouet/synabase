@@ -66,6 +66,13 @@ export function CustomerProfileView({
                   <span>{[customer.gender, customer.age ? `${customer.age} años` : null].filter(Boolean).join(" · ")}</span>
                 )}
                 <span className="text-ink-400">Cliente desde {formatDate(customer.first_visit_at)}</span>
+                {/* De dónde se ganó. Sólo se marca el de delivery: el del local
+                    es el caso normal y no hace falta señalarlo. */}
+                {customer.origin === "online" && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-[12px] font-semibold text-brand-700">
+                    🛵 Llegó por pedidos online
+                  </span>
+                )}
               </div>
             </div>
           </div>

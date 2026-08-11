@@ -159,6 +159,50 @@ export function FormBuilder({
 
               <section className="card space-y-3 p-5">
                 <h3 className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-ink-950">
+                  Dónde se usa este QR
+                  <Hint>
+                    Separa a la gente que entró al local de la que te compró por una app de pedidos.
+                    Los de la app todavía no eran clientes tuyos: eran de la plataforma.
+                  </Hint>
+                </h3>
+                {(
+                  [
+                    ["local", "En el local", "Pegado en la mesa, el mostrador o la vidriera."],
+                    ["online", "En los pedidos online", "Impreso en el ticket o pegado en la bolsa del delivery."],
+                  ] as const
+                ).map(([valor, titulo, texto]) => (
+                  <label
+                    key={valor}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition",
+                      form.origin === valor
+                        ? "border-brand-400 bg-brand-50/60 ring-1 ring-brand-200"
+                        : "border-line hover:border-ink-300",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="origin"
+                      className="mt-0.5 accent-brand-600"
+                      checked={form.origin === valor}
+                      onChange={() => patchLocal({ origin: valor })}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-[13.5px] font-semibold text-ink-950">{titulo}</span>
+                      <span className="mt-0.5 block text-[12.5px] leading-relaxed text-ink-500">{texto}</span>
+                    </span>
+                  </label>
+                ))}
+                {form.origin === "online" && (
+                  <p className="rounded-xl border border-brand-200/70 bg-brand-50/60 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink-600">
+                    Cada persona que complete este formulario queda marcada como ganada por delivery.
+                    Vas a poder verlas aparte en Clientes y armar segmentos sólo con ellas.
+                  </p>
+                )}
+              </section>
+
+              <section className="card space-y-3 p-5">
+                <h3 className="flex items-center gap-2 text-[14px] font-semibold tracking-tight text-ink-950">
                   Cómo recibe el código
                   <Hint>
                     Mandarlo sólo por mail hace que la casilla quede verificada sola: si es falsa, el

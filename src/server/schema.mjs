@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS forms (
   theme_json    TEXT NOT NULL DEFAULT '{}',
   -- Cómo recibe el cliente su código: pantalla | email | ambos
   code_delivery TEXT NOT NULL DEFAULT 'ambos',
+  -- Dónde se escanea este QR: local | online (bolsa del delivery, apps de pedidos)
+  origin        TEXT NOT NULL DEFAULT 'local',
   is_template   BOOLEAN NOT NULL DEFAULT FALSE,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
@@ -107,6 +109,9 @@ CREATE TABLE IF NOT EXISTS customers (
   gender         TEXT,
   age            INTEGER,
   notes          TEXT,
+  -- Por dónde entró a la base la primera vez: local | online. No se pisa
+  -- después, porque el valor está en saber de dónde se ganó al cliente.
+  origin         TEXT NOT NULL DEFAULT 'local',
   first_visit_at TEXT NOT NULL,
   last_visit_at  TEXT NOT NULL,
   visits         INTEGER NOT NULL DEFAULT 1,
@@ -245,4 +250,11 @@ ALTER TABLE businesses ADD COLUMN IF NOT EXISTS pending_plan TEXT;
 
 -- Entrega del código de descuento por mail, para que el correo quede verificado.
 ALTER TABLE forms ADD COLUMN IF NOT EXISTS code_delivery TEXT NOT NULL DEFAULT 'ambos';
+
+-- Un QR para el local y otro para los pedidos online, y de dónde salió cada
+-- cliente. Todo lo que ya existía nació en el local, que es el valor por
+-- defecto: nadie aparece marcado como online sin haberlo sido.
+ALTER TABLE forms ADD COLUMN IF NOT EXISTS origin TEXT NOT NULL DEFAULT 'local';
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS origin TEXT NOT NULL DEFAULT 'local';
+CREATE INDEX IF NOT EXISTS idx_customers_origin ON customers(business_id, origin);
 `;

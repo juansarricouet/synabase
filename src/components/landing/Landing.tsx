@@ -257,6 +257,46 @@ export function Landing({ lang }: { lang: Lang }) {
         </div>
       </section>
 
+      {/*
+        ————— Delivery —————
+
+        El caso del que vende por apps de pedidos. Se le da lugar propio y no
+        una viñeta más porque es la razón más concreta para contratar esto: el
+        comercio ya está pagando comisión por clientes que no puede volver a
+        contactar. No se nombra ninguna plataforma.
+      */}
+      <section id="delivery" className="scroll-mt-24 border-t border-inkblack/8 px-6 py-16 sm:py-24 lg:py-28">
+        <div className="mx-auto max-w-5xl">
+          <div className="rv text-center">
+            <LinesTitle
+              lines={t.delivery.titleLines}
+              className="display-title mx-auto max-w-[18ch] text-[28px] sm:text-[36px] lg:text-[42px]"
+            />
+            <p className="body-copy mx-auto mt-6 max-w-[58ch] text-[16px] text-inkblack/60">
+              {t.delivery.body}
+            </p>
+          </div>
+
+          <div className="stagger mt-12 grid gap-5 sm:grid-cols-3">
+            {t.delivery.points.map((p, i) => (
+              <div
+                key={p.title}
+                className="rv rounded-2xl border border-inkblack/10 bg-white p-6 text-left"
+                style={{ ["--rv-delay" as string]: `${i * 90}ms` }}
+              >
+                <span className="font-display flex size-7 items-center justify-center rounded-full bg-inkblack text-[12px] font-bold text-white">
+                  {i + 1}
+                </span>
+                <h3 className="font-display mt-4 text-[16px] font-bold tracking-[-0.02em] text-inkblack">
+                  {p.title}
+                </h3>
+                <p className="body-copy mt-2 text-[14.5px] leading-relaxed text-inkblack/60">{p.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ————— Secciones de producto ————— */}
       {t.features.map((f, i) => (
         <FeatureSection

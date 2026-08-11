@@ -59,6 +59,18 @@ interface Copy {
   };
   marquee: string[];
   thesis: { titleLines: string[]; body: string };
+  /**
+   * El argumento del delivery.
+   *
+   * Va aparte de `features` porque no es una función más: es el motivo por el
+   * que le sirve a un comercio que ya vende por apps de pedidos. No se nombra
+   * a ninguna plataforma.
+   */
+  delivery: {
+    titleLines: string[];
+    body: string;
+    points: { title: string; text: string }[];
+  };
   features: { n: string; eyebrow: string; title: string; items: string[] }[];
   process: { heading: string; steps: { n: string; title: string; text: string }[] };
   dark: {
@@ -189,6 +201,24 @@ const ES: Copy = {
   thesis: {
     titleLines: ["El descuento es el gancho.", "La información es el negocio."],
     body: "Cientos de personas pasan por tu local todos los meses y no sabés nada de ellas. Quién volvió, quién no vino más, qué pide cada uno. SynapBase convierte ese anonimato en datos que podés usar.",
+  },
+  delivery: {
+    titleLines: ["Los pedidos son tuyos.", "Los clientes, todavía no."],
+    body: "Cada pedido que entra por una app lo cocinaste vos, lo pagó alguien que quiso comer lo tuyo, y el nombre de esa persona queda del otro lado. Pagás la comisión y encima seguís sin saber quién te compró. Un QR en la bolsa lo cambia.",
+    points: [
+      {
+        title: "Un QR aparte, adentro del pedido",
+        text: "Impreso en el ticket o pegado en la bolsa, con su propio descuento para la próxima visita al local.",
+      },
+      {
+        title: "Sabés cuáles se ganaron ahí",
+        text: "Cada cliente queda marcado según por dónde entró, así ves cuántos venían de una app y cuánto gastan comparados con los del local.",
+      },
+      {
+        title: "La próxima te compra directo",
+        text: "Ya tenés cómo escribirles. El pedido siguiente puede entrar sin intermediario y sin comisión.",
+      },
+    ],
   },
   features: [
     {
@@ -323,6 +353,24 @@ const EN: Copy = {
   thesis: {
     titleLines: ["The discount is the hook.", "The data is the business."],
     body: "Hundreds of people walk through your door every month and you know nothing about them. Who came back, who never returned, what each one orders. SynapBase turns that anonymity into data you can act on.",
+  },
+  delivery: {
+    titleLines: ["The orders are yours.", "The customers aren't."],
+    body: "Every order that comes through a delivery app was cooked by you, paid for by someone who wanted your food, and their name stays on the other side. You pay the commission and still don't know who bought from you. A QR code in the bag changes that.",
+    points: [
+      {
+        title: "A separate QR, inside the order",
+        text: "Printed on the receipt or stuck to the bag, with its own discount for their next visit to your place.",
+      },
+      {
+        title: "You know which ones you won there",
+        text: "Every customer is tagged by where they came from, so you can see how many came from an app and how much they spend next to your walk-ins.",
+      },
+      {
+        title: "Next time they order direct",
+        text: "You already have a way to reach them. The next order can come in with no middleman and no commission.",
+      },
+    ],
   },
   features: [
     {

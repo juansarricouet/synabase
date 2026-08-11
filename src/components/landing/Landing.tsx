@@ -552,6 +552,7 @@ export function Landing({ lang }: { lang: Lang }) {
               <MessageCircle className="size-3.5" />
               WhatsApp
             </a>
+            <Link href="/blog" className="transition-colors hover:text-inkblack">Blog</Link>
             <Link href="/demo" className="transition-colors hover:text-inkblack">{t.footer.demo}</Link>
             <Link href="/login" className="transition-colors hover:text-inkblack">{t.footer.login}</Link>
             <Link href="/register" className="transition-colors hover:text-inkblack">{t.footer.register}</Link>

@@ -57,6 +57,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         dibujándose sola y una ficha con números subiendo: se veía complicado,
         que es lo contrario de lo que se vende acá. Lo que queda se entiende de
         una sola lectura, sin que nada se mueva.
+
+        El coral vuelve como acento —el punto, los números, el plan destacado—
+        y no como fondo: es lo que da marca sin recargar.
       */}
       <aside className="relative hidden min-w-0 overflow-hidden bg-inkblack lg:flex lg:flex-col lg:justify-center">
         <div className="relative px-12 py-14 xl:px-14">
@@ -64,8 +67,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             href="https://www.synapse.place/"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-display text-[13px] font-bold tracking-tight text-white/45 transition-colors hover:text-white"
+            className="font-display inline-flex items-center gap-2 text-[13px] font-bold tracking-tight text-coral transition-opacity hover:opacity-70"
           >
+            <span className="size-1.5 shrink-0 rounded-full bg-coral" />
             Un producto de synapse.
           </a>
           <h2 className="display-title mt-3.5 max-w-[14ch] text-[32px] text-white xl:text-[36px]">
@@ -85,7 +89,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               ["Te quedás con el dato", "Su nombre, qué consumió y cuándo volvió."],
             ].map(([titulo, detalle], i) => (
               <li key={titulo} className="flex gap-4">
-                <span className="font-display mt-px flex size-6 shrink-0 items-center justify-center rounded-full border border-white/20 text-[12px] font-bold text-white/70">
+                <span className="font-display mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-coral/15 text-[12px] font-bold text-coral">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
@@ -98,7 +102,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
           {/* Los planes, en una tira compacta */}
           <div className="mt-10">
-            <p className="font-display text-[12px] font-bold tracking-tight text-white/45">
+            <p className="font-display text-[12px] font-bold tracking-tight text-coral">
               En qué se diferencian los planes
             </p>
             <div className="mt-3 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -115,11 +119,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                   <div
                     key={p.name}
                     className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                      p.highlight ? "bg-white/[0.07]" : "hover:bg-white/[0.03]"
+                      p.highlight ? "bg-coral/[0.10]" : "hover:bg-white/[0.03]"
                     }`}
                   >
                     <span
-                      className={`size-1.5 shrink-0 rounded-full ${p.highlight ? "bg-white/70" : "bg-white/25"}`}
+                      className={`size-1.5 shrink-0 rounded-full ${p.highlight ? "bg-coral" : "bg-white/25"}`}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="font-display text-[13px] font-bold text-white">{p.name}</p>

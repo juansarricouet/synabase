@@ -93,12 +93,23 @@ function FeatureSection({
 }
 
 /** Titular que entra línea por línea desde su máscara. */
-function LinesTitle({ lines, className = "" }: { lines: string[]; className?: string }) {
+function LinesTitle({
+  lines,
+  className = "",
+  /** Pinta en coral la última línea, para que caiga el remate del titular. */
+  accentLast = false,
+}: {
+  lines: string[];
+  className?: string;
+  accentLast?: boolean;
+}) {
   return (
     <h2 className={className}>
       {lines.map((line, i) => (
         <span key={line} className="line-mask" style={{ ["--i" as string]: i }}>
-          <span>{line}</span>
+          <span className={accentLast && i === lines.length - 1 ? "text-coral" : undefined}>
+            {line}
+          </span>
         </span>
       ))}
     </h2>
@@ -270,6 +281,7 @@ export function Landing({ lang }: { lang: Lang }) {
           <div className="rv text-center">
             <LinesTitle
               lines={t.delivery.titleLines}
+              accentLast
               className="display-title mx-auto max-w-[18ch] text-[28px] sm:text-[36px] lg:text-[42px]"
             />
             <p className="body-copy mx-auto mt-6 max-w-[58ch] text-[16px] text-inkblack/60">
@@ -281,10 +293,10 @@ export function Landing({ lang }: { lang: Lang }) {
             {t.delivery.points.map((p, i) => (
               <div
                 key={p.title}
-                className="rv rounded-2xl border border-inkblack/10 bg-white p-6 text-left"
+                className="rv rounded-2xl border border-coral/25 bg-white p-6 text-left transition-colors hover:border-coral/50"
                 style={{ ["--rv-delay" as string]: `${i * 90}ms` }}
               >
-                <span className="font-display flex size-7 items-center justify-center rounded-full bg-inkblack text-[12px] font-bold text-white">
+                <span className="font-display flex size-7 items-center justify-center rounded-full bg-coral text-[12px] font-bold text-white">
                   {i + 1}
                 </span>
                 <h3 className="font-display mt-4 text-[16px] font-bold tracking-[-0.02em] text-inkblack">

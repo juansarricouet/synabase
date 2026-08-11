@@ -197,6 +197,11 @@ const ES: Copy = {
     "Cómo te conoció",
     "Qué edad tiene",
     "Hace cuánto no aparece",
+    "Clientes con nombre",
+    "Campañas que llegan",
+    "Descuentos que vuelven",
+    "Retornos que se miden",
+    "Segmentos por consumo",
   ],
   thesis: {
     titleLines: ["El descuento es el gancho.", "La información es el negocio."],
@@ -349,6 +354,11 @@ const EN: Copy = {
     "How they found you",
     "How old they are",
     "How long since their last visit",
+    "Customers with a name",
+    "Campaigns that land",
+    "Discounts that bring them back",
+    "Returns you can measure",
+    "Segments by what they order",
   ],
   thesis: {
     titleLines: ["The discount is the hook.", "The data is the business."],

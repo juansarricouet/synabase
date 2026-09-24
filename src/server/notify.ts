@@ -375,3 +375,50 @@ export async function sendDiscountCode(data: {
     data.businessName,
   );
 }
+
+/** ¿Está configurado el envío? Sin esto no se puede prometer que un mail salga. */
+export function mailConfigurado(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
+}
+
+/**
+ * Un mail de campaña.
+ *
+ * El cuerpo lo escribe el comercio en texto plano, así que se escapa entero y
+ * los saltos de línea se respetan: si escribió tres párrafos, llegan tres
+ * párrafos y no un bloque corrido.
+ *
+ * Lleva una línea al pie diciendo por qué le llega. No es decorativo: alguien
+ * que no entiende de dónde salió el mail lo marca como spam, y eso perjudica
+ * la entrega de todos los comercios que comparten el remitente.
+ */
+export async function sendCampaignEmail(data: {
+  to: string;
+  subject: string;
+  body: string;
+  businessName: string;
+}): Promise<boolean> {
+  const negocio = escapeHtml(data.businessName);
+  const parrafos = data.body
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map(
+      (p) =>
+        `<p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#333">${escapeHtml(p).replaceAll("\n", "<br>")}</p>`,
+    )
+    .join("");
+
+  return sendMailTo(
+    data.to,
+    data.subject,
+    `<div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;color:#111">
+      <p style="margin:0 0 18px;font-size:14px;font-weight:600;color:#777">${negocio}</p>
+      ${parrafos}
+      <p style="margin:28px 0 0;font-size:11px;color:#aaa;border-top:1px solid #eee;padding-top:14px">
+        Recibís este mail porque dejaste tus datos en ${negocio}. Impulsado por SynapBase.
+      </p>
+    </div>`,
+    data.businessName,
+  );
+}

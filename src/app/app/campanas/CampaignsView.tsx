@@ -181,8 +181,21 @@ export function CampaignsView({
   async function dispatch() {
     if (!toSend) return;
     try {
-      await api(`/api/campaigns/${toSend.id}/send`, { body: {} });
-      toast("success", "Campaña marcada como enviada: audiencia registrada");
+      const r = (await api(`/api/campaigns/${toSend.id}/send`, { body: {} })) as {
+        enviados?: number;
+        fallados?: number;
+      };
+      /* Se informa lo que realmente salió. Si alguno rebotó conviene decirlo
+         ahora y no que el comercio lo descubra cuando un cliente pregunte por
+         una promoción que nunca le llegó. */
+      const enviados = r?.enviados ?? 0;
+      const fallados = r?.fallados ?? 0;
+      toast(
+        fallados > 0 ? "error" : "success",
+        fallados > 0
+          ? `Salieron ${formatNumber(enviados)} mails y fallaron ${formatNumber(fallados)}`
+          : `Listo: salieron ${formatNumber(enviados)} mails`,
+      );
       setToSend(null);
       router.refresh();
     } catch (err) {
@@ -484,7 +497,11 @@ export function CampaignsView({
         danger={false}
         confirmLabel="Enviar ahora"
         title={`¿Enviar "${toSend?.name}"?`}
-        description={`Se va a registrar el envío a ${formatNumber(sendAudience)} clientes y la campaña pasa al historial. La entrega real por ${toSend?.channel === "whatsapp" ? "WhatsApp" : "email"} se activa al conectar tu cuenta (próximamente).`}
+        description={
+          toSend?.channel === "whatsapp"
+            ? "El envío por WhatsApp todavía no está conectado. Por ahora las campañas salen por email."
+            : `Se van a mandar ${formatNumber(sendAudience)} mails ahora mismo. No se puede deshacer.`
+        }
       >
         {sendQuota && (
           <div

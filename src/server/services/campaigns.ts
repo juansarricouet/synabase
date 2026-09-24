@@ -3,6 +3,8 @@ import { nowIso, num, one, rows, run, tx, uid } from "../db";
 import { ApiError } from "../http";
 import { log } from "../log";
 import { evaluateRules, getSegment } from "./segments";
+import { getBusiness } from "./business";
+import { mailConfigurado, sendCampaignEmail } from "../notify";
 import type { Campaign, CampaignChannel, CampaignStatus } from "@/lib/types";
 import type { CustomerFacts } from "./customers";
 
@@ -170,42 +172,126 @@ export async function deleteCampaign(businessId: string, campaignId: string) {
 }
 
 /**
- * "Envío" de campaña. La integración real (WhatsApp Business API / proveedor
- * de email) se conecta acá: hoy materializa la cola de destinatarios con el
- * snapshot de la audiencia y marca la campaña como enviada. Un worker externo
- * solo tendría que consumir campaign_recipients con status 'queued'.
+ * Cuántos mails se mandan como mucho en una sola pasada.
+ *
+ * El envío ocurre dentro del pedido HTTP, y una función serverless tiene un
+ * techo de tiempo. Con audiencias más grandes conviene cortar antes y decirlo,
+ * en lugar de que el pedido muera a la mitad y queden unos cuantos mails
+ * mandados sin registro de cuáles.
+ */
+const MAX_POR_ENVIO = 300;
+
+/** Cuántos mails salen a la vez. Suficiente para no ir de a uno, prudente
+ *  para no chocar con el límite de pedidos por segundo del proveedor. */
+const EN_PARALELO = 4;
+
+export interface DispatchResult {
+  campaign: Campaign;
+  enviados: number;
+  fallados: number;
+}
+
+/**
+ * Envía la campaña de verdad.
+ *
+ * Antes esto marcaba a todo el mundo como 'sent' sin mandar nada: el panel
+ * decía «Enviada · 87 destinatarios» y no salía un solo mail. Un panel que
+ * miente es peor que una función que falta, porque el comercio se entera
+ * cuando un cliente le pregunta por una promoción que nunca recibió.
+ *
+ * Ahora cada destinatario queda con lo que realmente pasó, y si el envío no
+ * se puede hacer, corta antes con el motivo en vez de simularlo.
  */
 export async function dispatchCampaign(
   businessId: string,
   campaignId: string,
-): Promise<Campaign> {
+): Promise<DispatchResult> {
   const campaign = await getCampaign(businessId, campaignId);
   if (!campaign) throw new ApiError(404, "Campaña no encontrada");
   if (campaign.status === "sent") throw new ApiError(400, "Esta campaña ya fue enviada");
+
+  /* WhatsApp no está conectado a ningún proveedor. Dejarlo pasar marcaría
+     como enviados mensajes que no existen. */
+  if (campaign.channel === "whatsapp") {
+    throw new ApiError(
+      501,
+      "El envío por WhatsApp todavía no está conectado. Por ahora se puede mandar por email.",
+    );
+  }
+
+  if (!mailConfigurado()) {
+    throw new ApiError(
+      503,
+      "Falta configurar el envío de mails. Sin eso la campaña no saldría y no tiene sentido darla por enviada.",
+    );
+  }
 
   const audience = await resolveAudience(businessId, campaign.segment_id, campaign.channel);
   if (audience.length === 0) {
     throw new ApiError(400, "La audiencia está vacía: no hay clientes con ese canal de contacto");
   }
+  if (audience.length > MAX_POR_ENVIO) {
+    throw new ApiError(
+      400,
+      `La audiencia tiene ${audience.length} personas y por ahora se manda de a ${MAX_POR_ENVIO}. Achicá el segmento y mandá en tandas.`,
+    );
+  }
+
+  const business = await getBusiness(businessId);
+  if (!business) throw new ApiError(404, "Comercio no encontrado");
+
+  const asunto = campaign.subject?.trim() || campaign.name;
+
+  /* Se manda primero y se escribe después: lo que se guarda es el resultado
+     real de cada envío, no una intención. */
+  const resultados: { customer: CustomerFacts; ok: boolean }[] = [];
+  for (let i = 0; i < audience.length; i += EN_PARALELO) {
+    const tanda = audience.slice(i, i + EN_PARALELO);
+    const hechos = await Promise.all(
+      tanda.map(async (c) => ({
+        customer: c,
+        ok: await sendCampaignEmail({
+          to: c.email!,
+          subject: renderMessage(asunto, c),
+          body: renderMessage(campaign.message, c),
+          businessName: business.name,
+        }),
+      })),
+    );
+    resultados.push(...hechos);
+  }
+
+  const enviados = resultados.filter((r) => r.ok).length;
+  const fallados = resultados.length - enviados;
   const now = nowIso();
 
   await tx(async (client) => {
-    for (const c of audience) {
+    for (const r of resultados) {
       await run(
-        "INSERT INTO campaign_recipients (id, campaign_id, customer_id, channel_to, status, sent_at, created_at) VALUES ($1, $2, $3, $4, 'sent', $5, $6)",
-        [uid(), campaignId, c.id, campaign.channel === "whatsapp" ? c.phone : c.email, now, now],
+        "INSERT INTO campaign_recipients (id, campaign_id, customer_id, channel_to, status, sent_at, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          uid(),
+          campaignId,
+          r.customer.id,
+          r.customer.email,
+          r.ok ? "sent" : "failed",
+          r.ok ? now : null,
+          now,
+        ],
         client,
       );
     }
+    /* `audience_count` cuenta lo que salió, no lo que se intentó: es el número
+       que el panel muestra como alcance y tiene que ser cierto. */
     await run(
       "UPDATE campaigns SET status = 'sent', sent_at = $1, audience_count = $2, updated_at = $3 WHERE id = $4",
-      [now, audience.length, now, campaignId],
+      [now, enviados, now, campaignId],
       client,
     );
   });
 
-  log.info("campaign.dispatched", { businessId, campaignId, audience: audience.length });
-  return (await getCampaign(businessId, campaignId))!;
+  log.info("campaign.dispatched", { businessId, campaignId, enviados, fallados });
+  return { campaign: (await getCampaign(businessId, campaignId))!, enviados, fallados };
 }
 
 /** Reemplaza variables {{nombre}}, {{producto_favorito}}, etc. en el mensaje. */

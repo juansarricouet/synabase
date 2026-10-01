@@ -112,9 +112,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 const gist =
                   p.name === "Free"
                     ? "Solo la encuesta y los números, hasta 100 clientes"
-                    : p.name === "Pro"
-                      ? "Base sin límite y campañas por email"
-                      : `Suma WhatsApp: ${PLANS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes`;
+                    : "Base sin límite, varios QR y campañas por email";
                 return (
                   <div
                     key={p.name}

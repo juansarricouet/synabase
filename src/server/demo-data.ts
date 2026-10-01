@@ -216,7 +216,7 @@ function build(): DemoDataset {
     logo_url: null,
     brand_color: "#c73418",
     hours: "Lun a Vie 8:00–20:00 · Sáb y Dom 9:00–21:00",
-    plan: "business",
+    plan: "pro",
     created_at: new Date(now - 240 * DAY).toISOString(),
   };
 

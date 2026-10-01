@@ -5,7 +5,7 @@ import { requestPlan } from "@/server/services/billing";
 import { canCharge } from "@/server/billing-config";
 import { notifyPlanRequested } from "@/server/notify";
 
-const schema = z.object({ plan: z.enum(["pro", "business"]) });
+const schema = z.object({ plan: z.enum(["pro"]) });
 
 /** El comercio avisa que pagó. Deja la solicitud pendiente de confirmación. */
 export const POST = withTenant(async (tenant, req) => {

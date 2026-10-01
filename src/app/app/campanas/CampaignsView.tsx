@@ -23,7 +23,7 @@ import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/client";
 import { cn, formatDateTime, formatMoney, formatNumber, timeAgo } from "@/lib/utils";
 import type { Campaign, CampaignChannel, Segment } from "@/lib/types";
-import { messageUsage, planOf } from "@/lib/plans";
+import { planOf } from "@/lib/plans";
 import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 const VARIABLES = [
@@ -67,7 +67,7 @@ export function CampaignsView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
-  const [channel, setChannel] = useState<CampaignChannel>("whatsapp");
+  const [channel, setChannel] = useState<CampaignChannel>("email");
   const [segmentId, setSegmentId] = useState<string | null>(presetSegmentId);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState(
@@ -86,12 +86,6 @@ export function CampaignsView({
     ? toSend.audience_count || segments.find((s) => s.id === toSend.segment_id)?.count || 0
     : 0;
 
-  /* Cómo quedaría el cupo del mes si se enviara. Sólo aplica a WhatsApp: el
-     email no tiene tope. */
-  const sendQuota =
-    toSend && toSend.channel === "whatsapp" && planOf(planId).whatsappIncluded > 0
-      ? messageUsage(whatsappUsed + sendAudience, planId)
-      : null;
 
   /* Audiencia en vivo según segmento + canal */
   useEffect(() => {
@@ -120,7 +114,7 @@ export function CampaignsView({
     setEditingId(null);
     setStep(0);
     setName("");
-    setChannel("whatsapp");
+    setChannel("email");
     setSegmentId(presetSegmentId);
     setSubject("");
     setMessage(
@@ -386,10 +380,12 @@ export function CampaignsView({
             </Field>
             <div>
               <p className="mb-2 text-[13px] font-medium text-ink-800">Canal de envío</p>
+              {/* WhatsApp no está conectado a ningún proveedor, así que no se
+                  ofrece. Dejarlo elegible sería dejar escribir una campaña
+                  entera para después avisar que no puede salir. */}
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
-                    ["whatsapp", "WhatsApp", MessageCircle, "Mensajes directos con altísima apertura"],
                     ["email", "Email", Mail, "Ideal para novedades y newsletters"],
                   ] as const
                 ).map(([value, label, Icon, hint]) => (
@@ -502,32 +498,7 @@ export function CampaignsView({
             ? "El envío por WhatsApp todavía no está conectado. Por ahora las campañas salen por email."
             : `Se van a mandar ${formatNumber(sendAudience)} mails ahora mismo. No se puede deshacer.`
         }
-      >
-        {sendQuota && (
-          <div
-            className={cn(
-              "rounded-xl border px-4 py-3 text-[12.5px] leading-relaxed",
-              sendQuota.over > 0
-                ? "border-warning-100 bg-warning-50 text-warning-600"
-                : "border-line bg-ink-50/60 text-ink-600",
-            )}
-          >
-            {sendQuota.over > 0 ? (
-              <>
-                Con esta campaña te pasás <strong>{formatNumber(sendQuota.over)} mensajes</strong> del
-                cupo de {formatNumber(sendQuota.included)} del mes. El excedente se factura aparte:{" "}
-                <strong>{formatMoney(sendQuota.extraCostArs)}</strong>.
-              </>
-            ) : (
-              <>
-                Usás {formatNumber(sendAudience)} de los{" "}
-                {formatNumber(sendQuota.included)} mensajes del mes. Te quedarían{" "}
-                <strong>{formatNumber(sendQuota.remaining)}</strong>.
-              </>
-            )}
-          </div>
-        )}
-      </ConfirmModal>
+      />
 
       <ConfirmModal
         open={!!toDelete}

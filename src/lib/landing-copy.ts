@@ -8,8 +8,6 @@
 
 import { PLANS, USD_RATE } from "@/lib/plans";
 
-const WA = PLANS.business.whatsappIncluded.toLocaleString("es-AR");
-
 export type Lang = "es" | "en";
 
 /** Redondea a la decena de dólares más cercana, para no publicar "USD 37,50". */
@@ -102,7 +100,7 @@ const PLANS_ES: Plan[] = [
       "1 formulario con QR",
       "Hasta 100 clientes en tu base",
       "Panel, estadísticas y respuestas",
-      "Sin campañas: ni email ni WhatsApp",
+      "Sin campañas por email",
     ],
     cta: "Crear cuenta",
   },
@@ -111,23 +109,14 @@ const PLANS_ES: Plan[] = [
     ars: PLANS.pro.ars,
     features: [
       "Formularios y clientes ilimitados",
+      "Un QR por local o por sucursal",
       "Segmentos y campañas por email",
       "Estadísticas avanzadas y exportación",
       "QR personalizado con tu marca",
+      "Usuarios con roles y permisos",
     ],
     cta: "Probar Pro",
     highlight: true,
-  },
-  {
-    name: PLANS.business.name,
-    ars: PLANS.business.ars,
-    features: [
-      "Todo lo de Pro",
-      `Campañas por WhatsApp: ${WA} mensajes por mes`,
-      "Múltiples sucursales",
-      "Roles, permisos y soporte prioritario",
-    ],
-    cta: "Hablar con ventas",
   },
 ];
 
@@ -139,7 +128,7 @@ const PLANS_EN: Plan[] = [
       "1 form with QR code",
       "Up to 100 customers in your database",
       "Dashboard, analytics and responses",
-      "No campaigns: neither email nor WhatsApp",
+      "No email campaigns",
     ],
     cta: "Create account",
   },
@@ -148,23 +137,14 @@ const PLANS_EN: Plan[] = [
     ars: PLANS.pro.ars,
     features: [
       "Unlimited forms and customers",
+      "One QR code per venue or branch",
       "Segments and email campaigns",
       "Advanced analytics and exports",
       "QR code with your own branding",
+      "Users with roles and permissions",
     ],
     cta: "Try Pro",
     highlight: true,
-  },
-  {
-    name: PLANS.business.name,
-    ars: PLANS.business.ars,
-    features: [
-      "Everything in Pro",
-      `WhatsApp campaigns: ${WA} messages per month`,
-      "Multiple locations",
-      "Roles, permissions and priority support",
-    ],
-    cta: "Talk to sales",
   },
 ];
 
@@ -251,7 +231,7 @@ const ES: Copy = {
       eyebrow: "Retorno",
       title: "Mensajes que traen gente de vuelta",
       items: [
-        "Email y WhatsApp con el nombre y el gusto de cada cliente",
+        "Emails con el nombre y el gusto de cada cliente",
         "Audiencia calculada al instante antes de enviar",
         "Borradores, programación e historial de cada campaña",
       ],
@@ -300,7 +280,7 @@ const ES: Copy = {
       },
       {
         q: "¿Sirve si tengo más de un local?",
-        a: "Sí. Podés generar un QR distinto por sucursal y ver los datos juntos o separados. El plan Business incluye múltiples sucursales y usuarios con permisos.",
+        a: "Sí. Podés generar un QR distinto por sucursal y filtrar la base por cuál originó cada registro. Pro incluye QR ilimitados y usuarios con permisos.",
       },
       {
         q: "¿Necesito saber de tecnología para usarlo?",
@@ -408,7 +388,7 @@ const EN: Copy = {
       eyebrow: "Return",
       title: "Messages that bring people back",
       items: [
-        "Email and WhatsApp using each customer's name and taste",
+        "Emails using each customer's name and taste",
         "Audience size calculated instantly before you send",
         "Drafts, scheduling and a history of every campaign",
       ],
@@ -457,7 +437,7 @@ const EN: Copy = {
       },
       {
         q: "Does it work if I have more than one location?",
-        a: "Yes. You can generate a different QR code per location and view the data together or separately. The Business plan includes multiple locations and users with permissions.",
+        a: "Yes. You can generate a different QR code per location and filter your database by which one each record came from. Pro includes unlimited QR codes and users with permissions.",
       },
       {
         q: "Do I need to be technical to use it?",

@@ -191,7 +191,7 @@ export const ARTICLES: Article[] = [
       "Un QR por local te deja comparar sucursales sin mezclar los datos, y ver todo junto cuando lo necesitás.",
     question: "¿Sirve si tengo más de un local?",
     answer:
-      "Sí. Podés generar un QR distinto por sucursal y ver los datos juntos o separados. El plan Business incluye varias sucursales y usuarios con permisos.",
+      "Sí. Podés generar un QR distinto por sucursal y filtrar la base por cuál originó cada registro. Pro incluye QR ilimitados y usuarios con permisos.",
     sections: [
       {
         h: "Un QR por lugar, no uno solo para todo",

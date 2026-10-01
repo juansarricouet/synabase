@@ -22,7 +22,7 @@ export interface BillingInfo {
   canManage: boolean;
 }
 
-const ORDEN: PlanId[] = ["free", "pro", "business"];
+const ORDEN: PlanId[] = ["free", "pro"];
 
 /**
  * Plan y facturación del comercio.
@@ -242,16 +242,11 @@ function resumen(id: PlanId): string[] {
   if (id === "free") {
     return ["1 formulario con QR", "Hasta 100 clientes", "Panel y estadísticas", "Sin campañas"];
   }
-  if (id === "pro") {
-    return [
-      "Formularios y clientes ilimitados",
-      "Segmentos y campañas por email",
-      "Estadísticas avanzadas y exportación",
-    ];
-  }
   return [
-    "Todo lo de Pro",
-    `Campañas por WhatsApp: ${PLANS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes`,
-    "Múltiples sucursales, roles y permisos",
+    "Formularios y clientes ilimitados",
+    "Un QR por local o por sucursal",
+    "Segmentos y campañas por email",
+    "Estadísticas avanzadas y exportación",
+    "Usuarios con roles y permisos",
   ];
 }

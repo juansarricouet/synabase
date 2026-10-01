@@ -65,10 +65,13 @@ export function checkPuedeCampaña(plan: string, canal: string): void {
       "Las campañas vienen con el plan Pro. En Free tenés la base y las estadísticas.",
     );
   }
-  if (canal === "whatsapp" && spec.whatsappIncluded === 0) {
+  /* WhatsApp no está conectado a ningún proveedor, así que no lo incluye
+     ningún plan. Se corta acá y no en el envío para que el aviso llegue antes
+     de que alguien escriba una campaña entera. */
+  if (canal === "whatsapp") {
     throw new ApiError(
       402,
-      "Las campañas por WhatsApp vienen con el plan Business. Con Pro podés mandar por email.",
+      "Las campañas por WhatsApp todavía no están disponibles. Por ahora se manda por email.",
     );
   }
 }

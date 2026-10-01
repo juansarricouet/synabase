@@ -6,7 +6,7 @@ import { setPlanManually } from "@/server/services/billing";
 
 const schema = z.object({
   businessId: z.string().min(1),
-  plan: z.enum(["free", "pro", "business"]),
+  plan: z.enum(["free", "pro"]),
 });
 
 /** Cambia el plan de un comercio a mano, sin pago de por medio. */

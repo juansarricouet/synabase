@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Avatar, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/Toast";
-import { MessageQuotaCard } from "@/components/MessageQuota";
 import { BillingPanel, type BillingInfo } from "@/components/BillingPanel";
 import { PLANS as PLAN_SPECS } from "@/lib/plans";
 import { api } from "@/lib/client";
@@ -19,43 +18,35 @@ import { DEMO_HINT, useDemoMode } from "@/components/demo/DemoMode";
 
 type Tab = "negocio" | "equipo" | "facturacion";
 
+/* Los precios salen de PLAN_SPECS y no escritos a mano: estaban duplicados
+   acá, y un cambio de lista se olvidaba justo en la pantalla donde se paga. */
 const PLANS = [
   {
     id: "free",
-    name: "Free",
-    price: "$0",
+    name: PLAN_SPECS.free.name,
+    price: `$${PLAN_SPECS.free.ars.toLocaleString("es-AR")}`,
     period: "para siempre",
     features: [
       "1 formulario con QR",
       "Hasta 100 clientes en tu base",
       "Panel, estadísticas y respuestas",
-      "Sin campañas: ni email ni WhatsApp",
+      "Sin campañas por email",
     ],
   },
   {
     id: "pro",
-    name: "Pro",
-    price: "$45.000",
+    name: PLAN_SPECS.pro.name,
+    price: `$${PLAN_SPECS.pro.ars.toLocaleString("es-AR")}`,
     period: "por mes",
     features: [
       "Formularios y clientes ilimitados",
+      "Un QR por local o por sucursal",
       "Segmentos y campañas por email",
       "Estadísticas avanzadas y exportación",
       "QR personalizado con tu marca",
+      "Usuarios con roles y permisos",
     ],
     highlight: true,
-  },
-  {
-    id: "business",
-    name: "Business",
-    price: "$90.000",
-    period: "por mes",
-    features: [
-      "Todo lo de Pro",
-      `Campañas por WhatsApp: ${PLAN_SPECS.business.whatsappIncluded.toLocaleString("es-AR")} mensajes por mes`,
-      "Múltiples sucursales",
-      "Roles, permisos y soporte prioritario",
-    ],
   },
 ];
 
@@ -422,8 +413,6 @@ export function SettingsView({
 
       {tab === "facturacion" && (
         <div className="space-y-5">
-          <MessageQuotaCard className="max-w-2xl" used={usage.whatsappThisMonth} planId={business.plan} />
-
           <section className="card max-w-2xl p-6">
             <h3 className="text-[14px] font-semibold tracking-tight text-ink-950">Uso actual</h3>
             <div className="mt-4 grid grid-cols-3 gap-3">
